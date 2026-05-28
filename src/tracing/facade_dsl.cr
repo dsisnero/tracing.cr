@@ -37,6 +37,11 @@ module Tracing
     event(Level::INFO, name, **fields)
   end
 
+  # Level shorthand: dispatch an event at TRACE level.
+  def self.trace(name : String, **fields) : Nil
+    event(Level::TRACE, name, **fields)
+  end
+
   # Level shorthand: dispatch an event at DEBUG level.
   def self.debug(name : String, **fields) : Nil
     event(Level::DEBUG, name, **fields)

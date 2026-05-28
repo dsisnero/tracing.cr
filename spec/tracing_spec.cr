@@ -295,7 +295,50 @@ describe "Tracing level shorthand methods" do
   end
 end
 
-# Test subscriber
+describe "Tracing macros (span!, event!, level macros)" do
+  it "span! macro creates a span" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::INFO, "macro_span", answer: 42)
+      s.disabled?.should be_false
+      subscriber.new_span_count.should eq(1)
+    end
+  end
+
+  it "event! macro dispatches an event" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      event!(Level::INFO, "macro_event", key: "val")
+      subscriber.event_count.should eq(1)
+    end
+  end
+
+  it "info! macro dispatches" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("info_macro")
+      subscriber.event_count.should eq(1)
+      subscriber.last_event_level.should eq(Level::INFO)
+    end
+  end
+
+  it "debug_span! macro creates a span at DEBUG level" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = debug_span!("debug_macro")
+      s.disabled?.should be_false
+    end
+  end
+
+  it "span! macro creates span with no fields" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::WARN, "no_fields")
+      s.disabled?.should be_false
+    end
+  end
+end
+
 private class TestSubscriber
   include Subscriber
 
