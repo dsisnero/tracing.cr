@@ -69,6 +69,28 @@ module Tracing
       def <=>(other : Level) : Int32
         other.value <=> value
       end
+
+      # Level/LevelFilter comparisons (inverted)
+
+      def <(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) < value
+      end
+
+      def <=(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) <= value
+      end
+
+      def >(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) > value
+      end
+
+      def >=(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) >= value
+      end
+
+      def ==(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) == value
+      end
     end
 
     # A filter comparable to a verbosity Level.
@@ -115,7 +137,7 @@ module Tracing
         @level
       end
 
-      protected def self.filter_to_u64(level : Level?) : UInt64
+      def self.filter_to_u64(level : Level?) : UInt64
         case level
         in Level then level.value.to_u64
         in Nil   then OFF_U64
@@ -141,7 +163,7 @@ module Tracing
       end
 
       def self.max=(filter : LevelFilter) : Nil
-        @@max_level.set(filter_to_u64(filter), :acquire_release)
+        @@max_level.set(filter_to_u64(filter), :release)
       end
 
       def to_s(io : IO) : Nil
@@ -217,6 +239,22 @@ module Tracing
 
       def <=>(other : LevelFilter) : Int32
         LevelFilter.filter_to_u64(other) <=> LevelFilter.filter_to_u64(@level)
+      end
+
+      def <(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) < LevelFilter.filter_to_u64(@level)
+      end
+
+      def <=(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) <= LevelFilter.filter_to_u64(@level)
+      end
+
+      def >(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) > LevelFilter.filter_to_u64(@level)
+      end
+
+      def >=(other : LevelFilter) : Bool
+        LevelFilter.filter_to_u64(other) >= LevelFilter.filter_to_u64(@level)
       end
 
       def ==(other : LevelFilter) : Bool

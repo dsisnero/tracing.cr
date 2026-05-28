@@ -22,7 +22,7 @@ module Tracing
             @has_just_one.set(@dispatchers.size <= 1, :sequentially_consistent)
           end
           dispatch.on_register_dispatch
-          rebuild_interest_cache
+          Dispatchers.rebuild_interest_cache
         end
 
         def each(& : Dispatch ->) : Nil
@@ -93,6 +93,27 @@ module Tracing
         @@global_init.compare_and_set(UNINITIALIZED, INITIALIZING, :acquire_release, :acquire)
       end
 
+      # Temporarily set this dispatch as the default for the current fiber.
+      #
+      # Usage:
+      #   Dispatch.with_default(my_dispatch) do
+      #     # my_dispatch is the default here
+      #   end
+      def self.with_default(dispatch : Dispatch, & : -> T) : T forall T
+        prior = fiber_local
+        store_fiber_local(dispatch)
+        begin
+          yield
+        ensure
+          store_fiber_local(prior)
+        end
+      end
+
+      # Get the currently active dispatch (fiber-local first, then global).
+      def self.current : Dispatch?
+        fiber_local || default
+      end
+
       # Dispatch methods — forward to the contained subscriber.
 
       def new_span(attrs : Span::Attributes) : Span::Id
@@ -141,6 +162,19 @@ module Tracing
 
       @@global_init : Atomic(UInt8) = Atomic(UInt8).new(UNINITIALIZED)
       @@global_dispatch : Dispatch?
+      @@fiber_locals = {} of Fiber => Dispatch
+
+      private def self.fiber_local : Dispatch?
+        @@fiber_locals[Fiber.current]?
+      end
+
+      private def self.store_fiber_local(dispatch : Dispatch?) : Nil
+        if dispatch
+          @@fiber_locals[Fiber.current] = dispatch
+        else
+          @@fiber_locals.delete(Fiber.current)
+        end
+      end
     end
 
     class SetGlobalDefaultError < Exception

@@ -6,6 +6,7 @@ require "./tracing/span"
 require "./tracing/event"
 require "./tracing/subscriber"
 require "./tracing/dispatcher"
+require "./tracing/facade_span"
 
 module Tracing
   VERSION = "0.1.0"
@@ -20,7 +21,7 @@ module Tracing
   alias Event = Core::Event
   alias Dispatch = Core::Dispatch
 
-  module Span
+  module CoreSpan
     alias Id = Core::Span::Id
     alias Attributes = Core::Span::Attributes
     alias Record = Core::Span::Record

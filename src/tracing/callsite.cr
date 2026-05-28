@@ -61,11 +61,11 @@ module Tracing
           end
         end
 
-        private def next : Pointer(DefaultCallsite)
+        def next : Pointer(DefaultCallsite)
           Pointer(DefaultCallsite).new(@next_ptr.get(:acquire))
         end
 
-        private def next=(ptr : Pointer(DefaultCallsite))
+        def next=(ptr : Pointer(DefaultCallsite))
           @next_ptr.set(ptr.address, :release)
         end
       end
