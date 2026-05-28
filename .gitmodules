@@ -1,0 +1,3 @@
+[submodule "vendor/tracing"]
+	path = vendor/tracing
+	url = https://github.com/tokio-rs/tracing.git

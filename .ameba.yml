@@ -1,0 +1,22 @@
+Lint/NotNil:
+  Enabled: false
+
+Style/ParenthesesAroundCondition:
+  Enabled: true
+
+Lint/UselessAssign:
+  Excluded:
+    - spec/**/*_spec.cr
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Naming/PredicateName:
+  Enabled: false
+
+Naming/BlockParameterName:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Excluded:
+    - src/tracing/types.cr
