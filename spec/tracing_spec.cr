@@ -384,3 +384,33 @@ private class TestSubscriber
     LevelFilter.trace
   end
 end
+
+# RED tests — tracing-subscriber Registry
+describe "Tracing::Registry (ported from upstream registry/sharded.rs)" do
+  it "creates spans and tracks them" do
+    registry = Tracing::Registry.new
+    dispatch = Dispatch.new(registry)
+    Dispatch.with_default(dispatch) do
+      span = span!(Level::INFO, "test_span")
+      span.disabled?.should be_false
+      id = span.id
+      id.should_not be_nil
+
+      data = registry.span_data(id.not_nil!)
+      data.should_not be_nil
+      data.try(&.name).should eq("test_span")
+    end
+  end
+
+  it "tracks span parent relationships" do
+    registry = Tracing::Registry.new
+    dispatch = Dispatch.new(registry)
+    Dispatch.with_default(dispatch) do
+      s = span!(Level::INFO, "parent")
+      s2 = child_span!(s.id.not_nil!, Level::INFO, "child")
+      data = registry.span_data(s2.id.not_nil!)
+      data.should_not be_nil
+      data.try(&.parent).should eq(s.id)
+    end
+  end
+end
