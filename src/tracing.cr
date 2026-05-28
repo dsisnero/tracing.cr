@@ -10,6 +10,7 @@ require "./tracing/facade_span"
 require "./tracing/facade_dsl"
 require "./tracing/facade_macros"
 require "./tracing-subscriber/registry"
+require "./tracing-subscriber/layer"
 
 module Tracing
   VERSION = "0.1.0"

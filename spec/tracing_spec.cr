@@ -414,3 +414,52 @@ describe "Tracing::Registry (ported from upstream registry/sharded.rs)" do
     end
   end
 end
+
+# RED tests — tracing-subscriber Layer
+describe "Tracing::Layer (ported from upstream layer/mod.rs)" do
+  it "composes a Layer with a Registry to observe events" do
+    observer = EventObserver.new
+    registry = Tracing::Registry.new
+    subscriber = registry.with(observer)
+    dispatch = Dispatch.new(subscriber)
+
+    Dispatch.with_default(dispatch) do
+      info!("an_event")
+    end
+
+    observer.events.size.should eq(1)
+    observer.events[0].metadata.name.should eq("an_event")
+  end
+
+  it "composes a Layer with a Registry to observe spans" do
+    observer = SpanObserver.new
+    registry = Tracing::Registry.new
+    subscriber = registry.with(observer)
+    dispatch = Dispatch.new(subscriber)
+
+    Dispatch.with_default(dispatch) do
+      s = span!(Level::INFO, "layer_span")
+      s.in_scope { info!("inside") }
+    end
+
+    observer.spans.size.should eq(1)
+    observer.spans[0].metadata.name.should eq("layer_span")
+  end
+end
+
+# Layer test helpers
+private class EventObserver < Tracing::Layer
+  getter events : Array(Tracing::Core::Event) = [] of Tracing::Core::Event
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
+    @events << event
+  end
+end
+
+private class SpanObserver < Tracing::Layer
+  getter spans : Array(Tracing::Core::Span::Attributes) = [] of Tracing::Core::Span::Attributes
+
+  def on_new_span(attrs : Tracing::Core::Span::Attributes, id : Tracing::CoreSpan::Id, ctx : Tracing::LayerContext)
+    @spans << attrs
+  end
+end
