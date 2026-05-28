@@ -12,6 +12,7 @@ require "./tracing/facade_macros"
 require "./tracing-subscriber/registry"
 require "./tracing-subscriber/layer"
 require "./tracing-subscriber/lookup_span"
+require "./tracing-subscriber/extensions"
 
 module Tracing
   VERSION = "0.1.0"

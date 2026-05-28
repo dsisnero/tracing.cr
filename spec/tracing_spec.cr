@@ -517,3 +517,36 @@ describe "Registry current span tracking" do
     end
   end
 end
+
+# RED tests — Extensions type map
+describe "Tracing::Extensions (ported from upstream registry/extensions.rs)" do
+  it "inserts and retrieves a value" do
+    exts = Tracing::Extensions.new
+    exts.insert(42_i32)
+    exts.get(Int32).should eq(42)
+  end
+
+  it "inserts and retrieves different types" do
+    exts = Tracing::Extensions.new
+    exts.insert("hello")
+    exts.insert(99_i64)
+    exts.get(String).should eq("hello")
+    exts.get(Int64).should eq(99_i64)
+  end
+
+  it "replaces existing value" do
+    exts = Tracing::Extensions.new
+    exts.insert(1_i32)
+    old = exts.replace(100_i32)
+    old.should eq(1)
+    exts.get(Int32).should eq(100)
+  end
+
+  it "removes a value" do
+    exts = Tracing::Extensions.new
+    exts.insert(true)
+    removed = exts.remove(Bool)
+    removed.should be_true
+    exts.get(Bool).should be_nil
+  end
+end
