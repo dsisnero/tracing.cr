@@ -58,8 +58,6 @@ end
 
 # Ported from vendor/tracing/tracing-core/src/metadata.rs doc examples
 describe "Level vs LevelFilter comparisons (ported from upstream metadata.rs)" do
-  # Inverted comparisons: TRACE(0) > DEBUG(1) > INFO(2) > WARN(3) > ERROR(4)
-  # Filter passes events at-or-below its threshold
   it "ERROR <= TRACE filter" do
     (Level::ERROR <= LevelFilter.trace).should be_true
   end
@@ -192,20 +190,19 @@ describe Tracing::Span do
 
   it "enter/exit lifecycle with a subscriber" do
     subscriber = TestSubscriber.new
-    dispatch = Dispatch.new(subscriber)
-    Dispatch.global_default = dispatch
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      meta = Metadata.new("test_span", "test_target", Level::INFO, kind: Kind::SPAN)
+      span = Span.new(meta)
+      span.disabled?.should be_false
+      span.id.should_not be_nil
 
-    meta = Metadata.new("test_span", "test_target", Level::INFO, kind: Kind::SPAN)
-    span = Span.new(meta)
-    span.disabled?.should be_false
-    span.id.should_not be_nil
+      guard = span.enter
+      subscriber.entered_count.should eq(1)
 
-    guard = span.enter
-    subscriber.entered_count.should eq(1)
-
-    span2 = guard.exit
-    subscriber.exited_count.should eq(1)
-    span2.disabled?.should be_false
+      span2 = guard.exit
+      subscriber.exited_count.should eq(1)
+      span2.disabled?.should be_false
+    end
   end
 end
 
@@ -225,13 +222,88 @@ describe Tracing::Core::Dispatch do
   end
 end
 
-# Test subscriber for verifying dispatch lifecycle
+# RED tests — Tracing.span and Tracing.event DSL methods
+describe "Tracing.span (ported from upstream span! macro)" do
+  it "creates a span via DSL method" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Tracing.span(Level::INFO, "my_span", answer: 42)
+      s.disabled?.should be_false
+      subscriber.new_span_count.should eq(1)
+    end
+  end
+
+  it "creates a span with parent override" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      parent_id = SpanId.from_u64(99_u64)
+      s = Tracing.child_span(parent_id, Level::INFO, "child_span")
+      s.disabled?.should be_false
+    end
+  end
+end
+
+describe "Tracing.event (ported from upstream event! macro)" do
+  it "dispatches an event via DSL method" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.event(Level::INFO, "my_event", key: "value")
+      subscriber.event_count.should eq(1)
+    end
+  end
+
+  it "does not crash when dispatching with no subscriber" do
+    Tracing.event(Level::INFO, "no_sub_event")
+  end
+end
+
+describe "Tracing level shorthand methods" do
+  it "traces an info event" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.info("info_event", key: "val")
+      subscriber.event_count.should eq(1)
+      subscriber.last_event_level.should eq(Level::INFO)
+    end
+  end
+
+  it "traces a debug event" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.debug("debug_event")
+      subscriber.event_count.should eq(1)
+      subscriber.last_event_level.should eq(Level::DEBUG)
+    end
+  end
+
+  it "traces a warn event" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.warn("warn_event")
+      subscriber.event_count.should eq(1)
+      subscriber.last_event_level.should eq(Level::WARN)
+    end
+  end
+
+  it "traces an error event" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.error("error_event")
+      subscriber.event_count.should eq(1)
+      subscriber.last_event_level.should eq(Level::ERROR)
+    end
+  end
+end
+
+# Test subscriber
 private class TestSubscriber
   include Subscriber
 
   property entered_count : Int32 = 0
   property exited_count : Int32 = 0
   property new_span_count : Int32 = 0
+  property event_count : Int32 = 0
+  property last_event_level : Level?
 
   def new_span(attrs : CoreSpan::Attributes) : SpanId
     @new_span_count += 1
@@ -247,6 +319,8 @@ private class TestSubscriber
   end
 
   def event(event : Tracing::Event) : Nil
+    @event_count += 1
+    @last_event_level = event.metadata.level
   end
 
   def record(id : SpanId, values : CoreSpan::Record) : Nil

@@ -7,6 +7,7 @@ require "./tracing/event"
 require "./tracing/subscriber"
 require "./tracing/dispatcher"
 require "./tracing/facade_span"
+require "./tracing/facade_dsl"
 
 module Tracing
   VERSION = "0.1.0"
