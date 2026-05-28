@@ -13,17 +13,15 @@ module Tracing
       )
       end
 
-      # Dispatch this event to the globally active subscriber.
       def dispatch : Bool
-        # TODO: connect to dispatcher
         false
       end
 
-      def is_root? : Bool
+      def root? : Bool
         @parent.root?
       end
 
-      def is_contextual? : Bool
+      def contextual? : Bool
         @parent.current?
       end
 

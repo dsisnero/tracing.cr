@@ -8,15 +8,8 @@ Lint/UselessAssign:
   Excluded:
     - spec/**/*_spec.cr
 
-Naming/AccessorMethodName:
-  Enabled: false
-
-Naming/PredicateName:
-  Enabled: false
-
-Naming/BlockParameterName:
-  Enabled: false
-
+# Per-file: LevelFilter.parse is a direct port of Rust FromStr with multiple
+# match arms for numeric and string variants. Splitting would fragment the port.
 Metrics/CyclomaticComplexity:
   Excluded:
     - src/tracing/types.cr

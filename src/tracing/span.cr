@@ -85,11 +85,11 @@ module Tracing
         def initialize(@metadata : Metadata, @values : Field::ValueSet = Field::ValueSet.new, @parent : Parent = Parent::CURRENT)
         end
 
-        def is_root? : Bool
+        def root? : Bool
           @parent.root?
         end
 
-        def is_contextual? : Bool
+        def contextual? : Bool
           @parent.current?
         end
 

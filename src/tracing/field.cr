@@ -23,7 +23,7 @@ module Tracing
         @callsite_id : Pointer(Void)
 
         def self.of(field_names : Enumerable(String), callsite : Callsite::Identifier)
-          fields = field_names.map { |n| Field.new(n) }.to_a
+          fields = field_names.map { |name| Field.new(name) }.to_a
           new(fields, callsite.ptr)
         end
 
@@ -51,7 +51,7 @@ module Tracing
         end
 
         def each(&) : Nil
-          @fields.each { |f| yield f }
+          @fields.each { |field| yield field }
         end
 
         def ==(other : FieldSet) : Bool
@@ -84,7 +84,7 @@ module Tracing
         end
 
         def record(field : Field, value : _) : Nil
-          @values << FieldValue.new(field, value)
+          @values << FieldValue.debug(field, value)
         end
 
         def record(field : Field, value : Int) : Nil
@@ -107,7 +107,7 @@ module Tracing
           @values << FieldValue.error(field, value)
         end
 
-        def is_empty? : Bool
+        def empty? : Bool
           @values.empty?
         end
 

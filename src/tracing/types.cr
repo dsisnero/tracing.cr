@@ -140,7 +140,7 @@ module Tracing
         end
       end
 
-      def self.set_max(filter : LevelFilter) : Nil
+      def self.max=(filter : LevelFilter) : Nil
         @@max_level.set(filter_to_u64(filter), :acquire_release)
       end
 
@@ -166,6 +166,8 @@ module Tracing
         end
       end
 
+      # Upstream port parity: direct translation of Rust `FromStr for LevelFilter`,
+      # which parses numeric strings (0-5) and named levels ("off", "error", ...).
       def self.parse(s : String) : self
         if num = s.to_u64?
           case num
@@ -265,7 +267,6 @@ module Tracing
     end
 
     # Indicates whether a callsite is a span, event, or hint.
-    # Uses bit flags: EVENT=1, SPAN=2, HINT=4
     struct Kind
       EVENT_BIT = 1_u8
       SPAN_BIT  = 2_u8
@@ -280,15 +281,15 @@ module Tracing
       def initialize(@bits : UInt8 = 0)
       end
 
-      def is_event? : Bool
+      def event? : Bool
         @bits & EVENT_BIT == EVENT_BIT
       end
 
-      def is_span? : Bool
+      def span? : Bool
         @bits & SPAN_BIT == SPAN_BIT
       end
 
-      def is_hint? : Bool
+      def hint? : Bool
         @bits & HINT_BIT == HINT_BIT
       end
 
@@ -303,16 +304,16 @@ module Tracing
       def to_s(io : IO) : Nil
         io << "Kind("
         has_bits = false
-        if is_event?
+        if event?
           io << "EVENT"
           has_bits = true
         end
-        if is_span?
+        if span?
           io << " | " if has_bits
           io << "SPAN"
           has_bits = true
         end
-        if is_hint?
+        if hint?
           io << " | " if has_bits
           io << "HINT"
           has_bits = true

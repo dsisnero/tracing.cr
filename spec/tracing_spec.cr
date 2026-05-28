@@ -83,19 +83,19 @@ end
 
 describe Tracing::Core::Kind do
   it "SPAN is span" do
-    Kind::SPAN.is_span?.should be_true
-    Kind::SPAN.is_event?.should be_false
+    Kind::SPAN.span?.should be_true
+    Kind::SPAN.event?.should be_false
   end
 
   it "EVENT is event" do
-    Kind::EVENT.is_span?.should be_false
-    Kind::EVENT.is_event?.should be_true
+    Kind::EVENT.span?.should be_false
+    Kind::EVENT.event?.should be_true
   end
 
   it "hint adds HINT bit" do
     k = Kind::SPAN.hint
-    k.is_span?.should be_true
-    k.is_hint?.should be_true
+    k.span?.should be_true
+    k.hint?.should be_true
   end
 end
 

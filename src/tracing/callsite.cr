@@ -22,7 +22,7 @@ module Tracing
 
       # Trait implemented by callsites.
       module Interface
-        abstract def set_interest(interest : Interest) : Nil
+        abstract def interest=(interest : Interest) : Nil
         abstract def metadata : Metadata
       end
 
@@ -30,15 +30,17 @@ module Tracing
       class DefaultCallsite
         include Interface
 
-        getter interest : Interest
         getter metadata : Metadata
 
         def initialize(@metadata : Metadata = Metadata.new("", "", Level::INFO))
           @interest = Interest.sometimes
         end
 
-        def set_interest(interest : Interest) : Nil
-          @interest = interest
+        def interest : Interest
+          @interest
+        end
+
+        def interest=(@interest : Interest) : Nil
         end
       end
     end

@@ -4,34 +4,34 @@ Upstream: `vendor/tracing/tracing-core/src/` (pinned at tracing-core-0.1.36)
 
 ## Modules
 
-| Module | Upstream File | Crystal File | Status | Notes |
-|--------|--------------|-------------|--------|-------|
-| Level | `metadata.rs` | `src/tracing/types.cr` | ported | Level enum with inverted comparisons |
-| LevelFilter | `metadata.rs` | `src/tracing/types.cr` | ported | Level? wrapper, OFF=nil, Atomic MAX_LEVEL |
-| Kind | `metadata.rs` | `src/tracing/types.cr` | ported | Bit flags: EVENT=1, SPAN=2, HINT=4 |
-| ParseLevelError | `metadata.rs` | `src/tracing/types.cr` | ported | |
-| ParseLevelFilterError | `metadata.rs` | `src/tracing/types.cr` | ported | |
-| Identifier | `callsite.rs` | `src/tracing/types.cr` | ported | Opaque pointer wrapper |
-| Metadata | `metadata.rs` | `src/tracing/metadata.cr` | ported | name, target, level, fields, kind, file, line, module_path |
-| Field | `field.rs` | `src/tracing/field.cr` | ported | Named field with string name |
-| FieldSet | `field.rs` | `src/tracing/field.cr` | ported | Ordered field names, callsite reference |
-| ValueSet | `field.rs` | `src/tracing/field.cr` | ported | Tagged value storage, typed record methods |
-| Visit | `field.rs` | `src/tracing/field.cr` | ported | Abstract visitor trait |
-| Interest | `callsite.rs` | `src/tracing/callsite.cr` | ported | NEVER/SOMETIMES/ALWAYS enum |
-| Callsite Interface | `callsite.rs` | `src/tracing/callsite.cr` | ported | Abstract callsite trait |
-| DefaultCallsite | `callsite.rs` | `src/tracing/callsite.cr` | ported | Ready-made callsite impl |
-| Span::Id | `span.rs` | `src/tracing/span.cr` | ported | Non-zero u64 |
-| Attributes | `span.rs` | `src/tracing/span.cr` | ported | metadata + values + parent |
-| Record | `span.rs` | `src/tracing/span.cr` | ported | ValueSet wrapper |
-| Current | `span.rs` | `src/tracing/span.cr` | ported | Current/None/Unknown states |
-| Parent | `parent.rs` | `src/tracing/span.cr` | ported | Root/Current/Explicit variants |
-| Event | `event.rs` | `src/tracing/event.cr` | ported | metadata + values + parent |
-| Subscriber | `subscriber.rs` | `src/tracing/subscriber.cr` | ported | Trait with full interface |
-| NoSubscriber | `subscriber.rs` | `src/tracing/subscriber.cr` | ported | No-op subscriber |
-| Dispatch | `dispatcher.rs` | `src/tracing/dispatcher.cr` | partial | Global default dispatch, thread-local not yet |
-| Callsite registry | `callsite.rs` dispatchers | - | missing | Global callsite list & interest cache |
-| Lazy | `lazy.rs` | - | missing | no_std Lazy (not needed for Crystal's std) |
-| Spin/Sync | `spin/`, `sync.rs` | - | missing | no_std mutex/once (not needed for Crystal's std) |
+| Module | Upstream File | Crystal File | Status | Crystal Name Changes |
+|--------|--------------|-------------|--------|---------------------|
+| Level | `metadata.rs` | `src/tracing/types.cr` | ported | - |
+| LevelFilter | `metadata.rs` | `src/tracing/types.cr` | ported | `set_max()` ↦ `max=` |
+| Kind | `metadata.rs` | `src/tracing/types.cr` | ported | `is_event()` ↦ `event?`, `is_span()` ↦ `span?`, `is_hint()` ↦ `hint?` |
+| ParseLevelError | `metadata.rs` | `src/tracing/types.cr` | ported | - |
+| ParseLevelFilterError | `metadata.rs` | `src/tracing/types.cr` | ported | - |
+| Identifier | `callsite.rs` | `src/tracing/types.cr` | ported | - |
+| Metadata | `metadata.rs` | `src/tracing/metadata.cr` | ported | `is_event()` ↦ `event?`, `is_span()` ↦ `span?` |
+| Field | `field.rs` | `src/tracing/field.cr` | ported | - |
+| FieldSet | `field.rs` | `src/tracing/field.cr` | ported | - |
+| ValueSet | `field.rs` | `src/tracing/field.cr` | ported | `is_empty()` ↦ `empty?` |
+| Visit | `field.rs` | `src/tracing/field.cr` | ported | - |
+| Interest | `callsite.rs` | `src/tracing/callsite.cr` | ported | - |
+| Callsite Interface | `callsite.rs` | `src/tracing/callsite.cr` | ported | `set_interest()` ↦ `interest=` |
+| DefaultCallsite | `callsite.rs` | `src/tracing/callsite.cr` | ported | `set_interest()` ↦ `interest=` |
+| Span::Id | `span.rs` | `src/tracing/span.cr` | ported | - |
+| Attributes | `span.rs` | `src/tracing/span.cr` | ported | `is_root()` ↦ `root?`, `is_contextual()` ↦ `contextual?` |
+| Record | `span.rs` | `src/tracing/span.cr` | ported | - |
+| Current | `span.rs` | `src/tracing/span.cr` | ported | - |
+| Parent | `parent.rs` | `src/tracing/span.cr` | ported | - |
+| Event | `event.rs` | `src/tracing/event.cr` | ported | `is_root()` ↦ `root?`, `is_contextual()` ↦ `contextual?` |
+| Subscriber | `subscriber.rs` | `src/tracing/subscriber.cr` | ported | - |
+| NoSubscriber | `subscriber.rs` | `src/tracing/subscriber.cr` | ported | - |
+| Dispatch | `dispatcher.rs` | `src/tracing/dispatcher.cr` | partial | `set_global_default()` ↦ `global_default=`, `get_default()` ↦ `default` |
+| Callsite registry | `callsite.rs` dispatchers | - | missing | - |
+| Lazy | `lazy.rs` | - | missing | (not needed with Crystal std) |
+| Spin/Sync | `spin/`, `sync.rs` | - | missing | (not needed with Crystal std) |
 
 ## Public API Surface
 
@@ -47,4 +47,21 @@ Upstream: `vendor/tracing/tracing-core/src/` (pinned at tracing-core-0.1.36)
 - [x] `NoSubscriber` - no-op subscriber
 - [ ] `Dispatch` thread-local support (global default only)
 - [ ] Callsite registry and interest cache
-- [ ] `set_global_default`, `get_default`, `get_current` full dispatch chain
+- [ ] `identify_callsite!` / `metadata!` macros
+
+## Naming Convention Map
+
+Crystal idioms vs upstream Rust:
+
+| Rust | Crystal | Reason |
+|------|---------|--------|
+| `is_event()` | `event?` | Crystal predicate convention drops `is_` prefix |
+| `is_span()` | `span?` | Same |
+| `is_hint()` | `hint?` | Same |
+| `is_root()` | `root?` | Same |
+| `is_contextual()` | `contextual?` | Same |
+| `is_empty()` | `empty?` | Same |
+| `set_interest(x)` | `interest = x` | Crystal setter convention uses `=` suffix |
+| `set_max(x)` | `max = x` | Same |
+| `set_global_default(x)` | `global_default = x` | Same |
+| `get_default()` | `default` | Crystal getter convention drops `get_` prefix |

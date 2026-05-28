@@ -1,15 +1,6 @@
 module Tracing
   module Core
     # Metadata describing a span or event.
-    #
-    # All spans and events have the following metadata:
-    # - A name, represented as a static string.
-    # - A target, a string that categorizes part of the system.
-    # - A verbosity level.
-    # - The names of the fields defined by the span or event.
-    # - Whether the metadata corresponds to a span or event.
-    #
-    # Optional metadata: file name, line number, module path.
     struct Metadata
       getter name : String
       getter target : String
@@ -36,12 +27,12 @@ module Tracing
         @fields.callsite
       end
 
-      def is_event? : Bool
-        @kind.is_event?
+      def event? : Bool
+        @kind.event?
       end
 
-      def is_span? : Bool
-        @kind.is_span?
+      def span? : Bool
+        @kind.span?
       end
 
       def private_fake_field : Field::Field
