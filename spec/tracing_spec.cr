@@ -463,3 +463,57 @@ private class SpanObserver < Tracing::Layer
     @spans << attrs
   end
 end
+
+# LookupSpan test helper
+private class EventSpanLayer < Tracing::Layer
+  property observed_name : String? = nil
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
+    span_ref = ctx.event_span(event)
+    @observed_name = span_ref.try(&.name)
+  end
+end
+
+# Ported from upstream tracing-subscriber/src/layer/tests.rs:122
+describe "LookupSpan (ported from upstream layer/tests.rs)" do
+  it "context_event_span returns parent span name" do
+    layer = EventSpanLayer.new
+    subscriber = Tracing::Registry.new.with(layer)
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("no span")
+      layer.observed_name.should be_nil
+
+      info_span!("contextual").in_scope do
+        info!("contextual span")
+        layer.observed_name.should eq("contextual")
+      end
+    end
+  end
+
+  it "lookup_span returns stored span data" do
+    registry = Tracing::Registry.new
+    Dispatch.with_default(Dispatch.new(registry)) do
+      s = span!(Level::INFO, "lookup_test")
+      id = s.id.not_nil!
+      span_ref = registry.span(id)
+      span_ref.should_not be_nil
+      span_ref.try(&.name).should eq("lookup_test")
+    end
+  end
+end
+
+describe "Registry current span tracking" do
+  it "tracks current span after enter" do
+    registry = Tracing::Registry.new
+    Dispatch.with_default(Dispatch.new(registry)) do
+      registry.current_span.should be_nil
+
+      s = span!(Level::INFO, "test")
+      s.in_scope do
+        registry.current_span.should_not be_nil
+        data = registry.span_data(registry.current_span.not_nil!)
+        data.try(&.name).should eq("test")
+      end
+    end
+  end
+end

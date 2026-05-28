@@ -23,11 +23,37 @@ module Tracing
     @mutex : Mutex
     @next_id : Atomic(UInt64)
     @max_level : LevelFilter?
+    @current_span_ids : Hash(UInt64, Array(Core::Span::Id)) # fiber-local current spans
 
     def initialize
       @spans = Hash(UInt64, SpanData).new
       @mutex = Mutex.new(:reentrant)
       @next_id = Atomic(UInt64).new(1_u64)
+      @current_span_ids = Hash(UInt64, Array(Core::Span::Id)).new
+    end
+
+    # Get the current span for the current fiber.
+    def current_span : Core::Span::Id?
+      @current_span_ids[Fiber.current.object_id]?.try(&.last?)
+    end
+
+    # ---- Subscriber implementation ----
+
+    def enter(id : Core::Span::Id) : Nil
+      fiber_id = Fiber.current.object_id
+      @mutex.synchronize do
+        @current_span_ids[fiber_id] ||= [] of Core::Span::Id
+        @current_span_ids[fiber_id] << id
+      end
+    end
+
+    def exit(id : Core::Span::Id) : Nil
+      fiber_id = Fiber.current.object_id
+      @mutex.synchronize do
+        if stack = @current_span_ids[fiber_id]?
+          stack.pop
+        end
+      end
     end
 
     # Lookup span data by ID.
@@ -43,12 +69,6 @@ module Tracing
       data = SpanData.new(id, attrs.metadata.name, attrs.metadata, parent: attrs.parent.id)
       @mutex.synchronize { @spans[id.into_u64] = data }
       id
-    end
-
-    def enter(id : Core::Span::Id) : Nil
-    end
-
-    def exit(id : Core::Span::Id) : Nil
     end
 
     def event(event : Core::Event) : Nil
