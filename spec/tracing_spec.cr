@@ -550,3 +550,42 @@ describe "Tracing::Extensions (ported from upstream registry/extensions.rs)" do
     exts.get(Bool).should be_nil
   end
 end
+
+# RED tests — Filter (LevelFilter as Layer)
+describe "Filter::LevelFilter (ported from upstream filter/level.rs)" do
+  it "filters out events above the configured level" do
+    filter_layer = Tracing::LevelFilterLayer.new(LevelFilter.info)
+    counting_layer = EventCountingLayer.new
+    registry = Tracing::Registry.new
+    # Filter must be OUTERMOST to block events from reaching counting layer
+    subscriber = registry.with(counting_layer).with(filter_layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("should pass")
+      debug!("should be filtered")
+    end
+
+    counting_layer.count.should eq(1)
+  end
+
+  it "reports max_level_hint" do
+    layer = Tracing::LevelFilterLayer.new(LevelFilter.warn)
+    layer.max_level_hint.should eq(LevelFilter.warn)
+  end
+
+  it "registers callsite interest correctly" do
+    layer = Tracing::LevelFilterLayer.new(LevelFilter.info)
+    meta = Metadata.new("test", "test_target", Level::ERROR)
+    interest = layer.on_register_callsite(meta, Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new))
+    interest.never?.should be_false
+    interest.always?.should be_true
+  end
+end
+
+private class EventCountingLayer < Tracing::Layer
+  property count : Int32 = 0
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
+    @count += 1
+  end
+end
