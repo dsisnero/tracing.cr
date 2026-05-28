@@ -1,5 +1,6 @@
 /docs/
-/lib/
+/lib/*
+!/lib/porting_helpers/
 /bin/
 /.shards/
 *.dwarf
