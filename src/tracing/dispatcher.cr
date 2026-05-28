@@ -1,7 +1,65 @@
 module Tracing
   module Core
-    # A Dispatch represents the ability to dispatch spans and events
-    # to a Subscriber.
+    # Manages the set of active dispatchers and triggers callsite
+    # interest cache rebuilding when dispatchers change.
+    module Dispatchers
+      class_getter instance : Manager = Manager.new
+
+      class Manager
+        @dispatchers : Array(Dispatch)
+        @has_just_one : Atomic(Bool)
+        @mutex : Mutex
+
+        def initialize
+          @dispatchers = [] of Dispatch
+          @has_just_one = Atomic(Bool).new(true)
+          @mutex = Mutex.new(:reentrant)
+        end
+
+        def register(dispatch : Dispatch) : Nil
+          @mutex.synchronize do
+            @dispatchers << dispatch
+            @has_just_one.set(@dispatchers.size <= 1, :sequentially_consistent)
+          end
+          dispatch.on_register_dispatch
+          rebuild_interest_cache
+        end
+
+        def each(& : Dispatch ->) : Nil
+          @mutex.synchronize do
+            @dispatchers.each { |dispatch| yield dispatch }
+          end
+        end
+      end
+
+      # Rebuild interest for all registered callsites based on
+      # current dispatchers.
+      def self.rebuild_interest_cache : Nil
+        max_level = LevelFilter.off
+
+        instance.each do |dispatch|
+          hint = dispatch.max_level_hint || LevelFilter.trace
+          max_level = hint if hint > max_level
+        end
+
+        Callsite::Callsites.instance.each do |callsite|
+          meta = callsite.metadata
+          interest : Callsite::Interest? = nil
+
+          instance.each do |dispatch|
+            i = dispatch.register_callsite(meta)
+            interest = interest ? interest.and(i) : i
+          end
+
+          callsite.interest = interest || Callsite::Interest.never
+        end
+
+        LevelFilter.max = max_level
+      end
+    end
+
+    # A Dispatch wraps a Subscriber and provides the interface for
+    # dispatching trace data.
     class Dispatch
       @subscriber : Subscriber?
 
@@ -12,61 +70,82 @@ module Tracing
         @subscriber
       end
 
+      # Set the global default dispatch. Triggers callsite interest
+      # cache rebuild. Returns true on success, false if already set.
       def self.global_default=(dispatch : Dispatch) : Nil
-        @@global_default.set(dispatch)
+        return if @@global_init.get(:sequentially_consistent) == INITIALIZED
+
+        if @@global_init.compare_and_set(UNINITIALIZED, INITIALIZING, :sequentially_consistent, :sequentially_consistent)
+          @@global_dispatch = dispatch
+          @@global_init.set(INITIALIZED, :sequentially_consistent)
+          Dispatchers.instance.register(dispatch)
+        else
+          raise SetGlobalDefaultError.new
+        end
       end
 
       def self.default : Dispatch?
-        @@global_default.get?
+        @@global_init.get(:sequentially_consistent) == INITIALIZED ? @@global_dispatch : nil
       end
 
       def self.try_close : Bool
-        @@global_default.try_close
+        return false if @@global_init.get(:acquire) == INITIALIZED
+        @@global_init.compare_and_set(UNINITIALIZED, INITIALIZING, :acquire_release, :acquire)
       end
 
-      protected def self.current_subscriber : Subscriber?
-        default.try(&.subscriber)
+      # Dispatch methods — forward to the contained subscriber.
+
+      def new_span(attrs : Span::Attributes) : Span::Id
+        s = @subscriber || return Span::Id.from_u64(1)
+        s.new_span(attrs)
       end
 
-      private class GlobalDefault
-        @@instance : GlobalDefault = GlobalDefault.new
-        @dispatch : Dispatch?
-        @closed : Bool = false
-        @mutex : Mutex = Mutex.new(:reentrant)
+      def enter(id : Span::Id) : Nil
+        @subscriber.try(&.enter(id))
+      end
 
-        def self.set(dispatch : Dispatch) : Bool
-          @@instance._set(dispatch)
-        end
+      def exit(id : Span::Id) : Nil
+        @subscriber.try(&.exit(id))
+      end
 
-        def self.get? : Dispatch?
-          @@instance._get?
-        end
+      def event(event : Event) : Nil
+        @subscriber.try(&.event(event))
+      end
 
-        def self.try_close : Bool
-          @@instance._try_close
-        end
+      def record(id : Span::Id, values : Span::Record) : Nil
+        @subscriber.try(&.record(id, values))
+      end
 
-        def _set(dispatch : Dispatch) : Bool
-          @mutex.synchronize do
-            return false if @closed
-            @dispatch = dispatch
-            true
-          end
-        end
+      def record_follows_from(span : Span::Id, follows : Span::Id) : Nil
+        @subscriber.try(&.record_follows_from(span, follows))
+      end
 
-        def _get? : Dispatch?
-          @mutex.synchronize do
-            @dispatch
-          end
-        end
+      def enabled(metadata : Metadata) : Bool
+        @subscriber.try(&.enabled(metadata)) || false
+      end
 
-        def _try_close : Bool
-          @mutex.synchronize do
-            return false if @closed
-            @closed = true
-            true
-          end
-        end
+      def register_callsite(metadata : Metadata) : Callsite::Interest
+        @subscriber.try(&.register_callsite(metadata)) || Callsite::Interest.sometimes
+      end
+
+      def max_level_hint : LevelFilter?
+        @subscriber.try(&.max_level_hint)
+      end
+
+      def on_register_dispatch : Nil
+      end
+
+      private UNINITIALIZED = 0_u8
+      private INITIALIZING  = 1_u8
+      private INITIALIZED   = 2_u8
+
+      @@global_init : Atomic(UInt8) = Atomic(UInt8).new(UNINITIALIZED)
+      @@global_dispatch : Dispatch?
+    end
+
+    class SetGlobalDefaultError < Exception
+      def initialize
+        super("the global default subscriber has already been set")
       end
     end
   end

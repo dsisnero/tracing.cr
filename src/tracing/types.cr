@@ -264,6 +264,38 @@ module Tracing
           io << "0x#{@ptr.address.to_s(16)}"
         end
       end
+
+      # Indicates the subscriber's interest in a callsite.
+      enum Interest : UInt8
+        NEVER     = 0
+        SOMETIMES = 1
+        ALWAYS    = 2
+
+        def self.never : self
+          NEVER
+        end
+
+        def self.sometimes : self
+          SOMETIMES
+        end
+
+        def self.always : self
+          ALWAYS
+        end
+
+        def never? : Bool
+          self == NEVER
+        end
+
+        def always? : Bool
+          self == ALWAYS
+        end
+
+        # Combine two interests: returns the most restrictive (lowest) interest.
+        def and(other : Interest) : Interest
+          value <= other.value ? self : other
+        end
+      end
     end
 
     # Indicates whether a callsite is a span, event, or hint.

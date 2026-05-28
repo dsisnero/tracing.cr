@@ -1,4 +1,13 @@
-/docs/
+# Local agent/tool settings
+.claude/
+
+# Local Crystal cache
+.crystal-cache/
+
+# Temporary working artifacts
+temp/
+
+# Dependency directories
 /lib/*
 !/lib/porting_helpers/
 /bin/
