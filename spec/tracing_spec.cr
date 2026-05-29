@@ -1523,3 +1523,26 @@ describe "OpenTelemetryLayer (ported from tracing-opentelemetry/src/layer.rs)" d
     layer.should be_a(Tracing::Layer)
   end
 end
+
+# RED tests — OTel span kind mapping
+describe "OpenTelemetry span kind mapping" do
+  it "maps otel.kind=server to Server kind" do
+    kind = Tracing::OpenTelemetryLayer.kind_from_field("server")
+    kind.should eq(OpenTelemetry::API::Span::Kind::Server)
+  end
+
+  it "maps otel.kind=client to Client kind" do
+    kind = Tracing::OpenTelemetryLayer.kind_from_field("client")
+    kind.should eq(OpenTelemetry::API::Span::Kind::Client)
+  end
+
+  it "defaults to Internal for unknown values" do
+    kind = Tracing::OpenTelemetryLayer.kind_from_field("unknown")
+    kind.should eq(OpenTelemetry::API::Span::Kind::Internal)
+  end
+
+  it "defaults to Internal for nil" do
+    kind = Tracing::OpenTelemetryLayer.kind_from_field(nil)
+    kind.should eq(OpenTelemetry::API::Span::Kind::Internal)
+  end
+end

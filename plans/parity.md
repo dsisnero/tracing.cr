@@ -165,7 +165,7 @@ distributed tracing systems.
 - [ ] Span enter/exit → OTel span start/end
 - [ ] Span events → OTel span events
 - [ ] Span status → OTel status (from `otel.status_code` field)
-- [ ] Span kind → OTel `SpanKind` (from `otel.kind` field)
+- [x] Span kind → OTel `SpanKind` (from `otel.kind` field)
 - [ ] Dynamic span name via `otel.name` field
 
 ### Context Propagation

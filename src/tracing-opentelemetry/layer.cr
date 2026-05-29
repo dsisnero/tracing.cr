@@ -1,3 +1,5 @@
+require "opentelemetry-api"
+
 module Tracing
   # A tracing Layer that converts spans and events to OpenTelemetry.
   #
@@ -6,10 +8,21 @@ module Tracing
     def initialize
     end
 
+    def self.kind_from_field(name : String?) : OpenTelemetry::API::Span::Kind
+      case name
+      when "server"   then OpenTelemetry::API::Span::Kind::Server
+      when "client"   then OpenTelemetry::API::Span::Kind::Client
+      when "producer" then OpenTelemetry::API::Span::Kind::Producer
+      when "consumer" then OpenTelemetry::API::Span::Kind::Consumer
+      when "internal" then OpenTelemetry::API::Span::Kind::Internal
+      else                 OpenTelemetry::API::Span::Kind::Internal
+      end
+    end
+
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
-      # Store OTel data in span extensions for later processing
       if span = ctx.span(id)
-        span.extensions_mut.try(&.insert(OtelSpanData.new(attrs.metadata.name)))
+        exts = span.extensions_mut
+        exts.try(&.insert(OtelSpanData.new(attrs.metadata.name)))
       end
     end
 
