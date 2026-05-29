@@ -21,6 +21,7 @@ module Tracing
     @show_target : Bool
     @show_level : Bool
     @compact_mode : Bool
+    @pretty_mode : Bool
     @span_events : FmtSpan
     @make_writer : (-> IO)?
 
@@ -30,12 +31,20 @@ module Tracing
       @show_target = false
       @show_level = true
       @compact_mode = false
+      @pretty_mode = false
       @span_events = FmtSpan::FULL
       @make_writer = nil
     end
 
     def compact : self
       @compact_mode = true
+      @pretty_mode = false
+      self
+    end
+
+    def pretty : self
+      @pretty_mode = true
+      @compact_mode = false
       self
     end
 
@@ -92,7 +101,6 @@ module Tracing
     def on_event(event : Core::Event, ctx : LayerContext) : Nil
       io = resolve_io
       span_name = ctx.event_span(event).try(&.name) || ""
-      span_info = span_name.empty? ? "" : " #{span_name}:"
 
       unless @compact_mode
         io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
@@ -103,18 +111,31 @@ module Tracing
       if @show_target
         io << event.metadata.target << " "
       end
-      io << span_info << event.metadata.name
+      unless span_name.empty?
+        io << span_name << ":"
+      end
+      io << event.metadata.name
+
+      if @pretty_mode
+        io << ":\n"
+      end
 
       vs = event.values
       if !vs.empty?
-        collector = FieldCollector.new
-        vs.visit(collector)
-        if collector.fields
-          io << "{" << collector.fields << "}"
+        if @pretty_mode
+          collector = PrettyFieldCollector.new
+          vs.visit(collector)
+          collector.entries.each { |line| io << "  " << line << "\n" }
+        else
+          collector = FieldCollector.new
+          vs.visit(collector)
+          if collector.fields
+            io << "{" << collector.fields << "}"
+          end
         end
       end
 
-      io << "\n"
+      io << "\n" unless @pretty_mode
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
@@ -189,6 +210,39 @@ module Tracing
       else
         @fields = pair
       end
+    end
+  end
+
+  private class PrettyFieldCollector
+    include Core::Field::Visit
+    property entries : Array(String) = [] of String
+
+    def record_debug(field : Field::Field, value) : Nil
+      @entries << "  #{field.name}: #{value}"
+    end
+
+    def record_i64(field : Field::Field, value : Int64) : Nil
+      @entries << "  #{field.name}: #{value}"
+    end
+
+    def record_u64(field : Field::Field, value : UInt64) : Nil
+      @entries << "  #{field.name}: #{value}"
+    end
+
+    def record_f64(field : Field::Field, value : Float64) : Nil
+      @entries << "  #{field.name}: #{value}"
+    end
+
+    def record_bool(field : Field::Field, value : Bool) : Nil
+      @entries << "  #{field.name}: #{value}"
+    end
+
+    def record_str(field : Field::Field, value : String) : Nil
+      @entries << "  #{field.name}: #{value}"
+    end
+
+    def record_error(field : Field::Field, value : Exception) : Nil
+      @entries << "  #{field.name}: #{value.message || ""}"
     end
   end
 end

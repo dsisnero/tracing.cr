@@ -1109,3 +1109,38 @@ describe "Nil as Layer (Option<Layer> support)" do
     collector.names.should_not contain("blocked")
   end
 end
+
+# RED tests — FmtLayer pretty mode
+describe "FmtLayer pretty mode" do
+  it "outputs multi-line events" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).pretty
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("pretty_event", user: "alice", count: 42)
+    end
+
+    output = io.to_s
+    output.lines.size.should be > 1
+    output.should contain("pretty_event")
+    output.should contain("user")
+    output.should contain("alice")
+  end
+
+  it "indents span context" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).pretty
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("outer").in_scope do
+        info!("inside")
+      end
+    end
+
+    output = io.to_s
+    output.should contain("outer")
+    output.should contain("inside")
+  end
+end
