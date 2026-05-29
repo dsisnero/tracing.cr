@@ -1589,3 +1589,47 @@ describe "OpenTelemetry error-to-exception mapping" do
     attrs["exception.message"].should eq("test error")
   end
 end
+
+# RED tests — OTel Tracer integration
+describe "OpenTelemetry Tracer integration" do
+  it "layer accepts a tracer" do
+    tracer = TestTracer.new
+    layer = Tracing::OpenTelemetryLayer.new(tracer)
+    layer.tracer.should eq(tracer)
+  end
+
+  it "creates OTel span on tracing span creation" do
+    tracer = TestTracer.new
+    layer = Tracing::OpenTelemetryLayer.new(tracer)
+    registry = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "test_span").in_scope { }
+    end
+
+    tracer.spans.size.should eq(1)
+    tracer.spans[0].name.should eq("test_span")
+  end
+end
+
+private class TestTracer
+  getter spans : Array(TestSpan) = [] of TestSpan
+
+  def start_span(name : String) : TestSpan
+    span = TestSpan.new(name)
+    @spans << span
+    span
+  end
+end
+
+private class TestSpan
+  getter name : String
+  property finished : Bool = false
+
+  def initialize(@name : String)
+  end
+
+  def finish
+    @finished = true
+  end
+end

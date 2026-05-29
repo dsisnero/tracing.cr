@@ -5,7 +5,9 @@ module Tracing
   #
   # Ported from upstream `tracing_opentelemetry::OpenTelemetryLayer`.
   class OpenTelemetryLayer < Layer
-    def initialize
+    getter tracer
+
+    def initialize(@tracer = nil)
     end
 
     def self.kind_from_field(name : String?) : OpenTelemetry::API::Span::Kind
@@ -30,29 +32,28 @@ module Tracing
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
-      if span = ctx.span(id)
-        exts = span.extensions_mut
-        exts.try(&.insert(OtelSpanData.new(attrs.metadata.name)))
-      end
+      otel_span = @tracer.try(&.start_span(attrs.metadata.name))
+      return unless span_ref = ctx.span(id)
+      return unless exts = span_ref.extensions_mut
+
+      data = OtelSpanData.new(attrs.metadata.name)
+      data.otel_span = otel_span
+      exts.insert(data)
     end
 
     def on_enter(id : Core::Span::Id, ctx : LayerContext) : Nil
-      # Track span start time
     end
 
     def on_exit(id : Core::Span::Id, ctx : LayerContext) : Nil
-      # Finalize span timing
     end
 
     def on_event(event : Core::Event, ctx : LayerContext) : Nil
     end
 
-    # Returns true if this event should be recorded as an OTel exception.
     def error_event?(meta : Metadata) : Bool
       meta.level == Level::ERROR
     end
 
-    # Build a Hash of exception attributes from message and stacktrace.
     def exception_attributes(message : String, stacktrace : String) : Hash(String, String)
       {
         "exception.message"    => message,
@@ -61,11 +62,9 @@ module Tracing
     end
   end
 
-  # Per-span data stored in Extensions for OpenTelemetry integration.
-  #
-  # Ported from upstream `tracing_opentelemetry::OtelData`.
   struct OtelSpanData
     getter name : String
+    property otel_span
 
     def initialize(@name : String)
     end
