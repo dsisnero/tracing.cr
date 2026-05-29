@@ -20,7 +20,7 @@ event-based diagnostics for Crystal programs.
 ```yaml
 dependencies:
   tracing:
-    github: dsisnero/tracing
+    github: dsisnero/tracing.cr
 ```
 
 ```bash

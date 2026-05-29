@@ -61,3 +61,12 @@ end
 macro error!(name, **fields)
   Tracing.error({{ name }}, {{ fields.double_splat }})
 end
+
+# Ported from tracing-macros/src/lib.rs (trace_dbg!)
+# Evaluates an expression, emits a DEBUG tracing event with
+# the value and stringified expression, then returns the value.
+macro trace_dbg!(expr)
+  %val = {{ expr }}
+  info!("trace_dbg", value: %val, expr: {{ expr.stringify }})
+  %val
+end

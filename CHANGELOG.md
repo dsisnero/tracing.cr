@@ -2,7 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.4.0] — 2026-05-28
+
+Initial Crystal port of tokio-rs/tracing — complete tracing-core, tracing facade,
+and tracing-subscriber with 111 parity specs.
 
 ### tracing-core
 

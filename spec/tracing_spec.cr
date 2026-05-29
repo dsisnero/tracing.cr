@@ -1270,3 +1270,29 @@ describe "LevelFilter.current" do
     LevelFilter.current.into_level.should eq(Level::TRACE)
   end
 end
+
+# RED tests — tracing-macros (trace_dbg!)
+describe "trace_dbg! macro (ported from tracing-macros/src/lib.rs)" do
+  it "evaluates expression and returns its value" do
+    log = EventCollector.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    result = Dispatch.with_default(Dispatch.new(subscriber)) do
+      trace_dbg!(42)
+    end
+
+    result.should eq(42)
+    log.names.should contain("trace_dbg")
+  end
+
+  it "emits event with expression stringified" do
+    log = EventCollector.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      trace_dbg!(2 + 2)
+    end
+
+    log.names.should contain("trace_dbg")
+  end
+end
