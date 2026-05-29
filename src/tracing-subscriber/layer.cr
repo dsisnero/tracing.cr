@@ -124,23 +124,15 @@ module Tracing
 
     def enabled(metadata : Metadata) : Bool
       ctx = LayerContext.new(@inner)
-      @inner.enabled(metadata) || @layer.enabled?(metadata, ctx)
+      @layer.enabled?(metadata, ctx)
     end
 
     def register_callsite(metadata : Metadata) : Callsite::Interest
-      inner_interest = @inner.register_callsite(metadata)
-      layer_interest = @layer.on_register_callsite(metadata, LayerContext.new(@inner))
-      inner_interest.and(layer_interest)
+      @layer.on_register_callsite(metadata, LayerContext.new(@inner))
     end
 
     def max_level_hint : LevelFilter?
-      hint = @inner.max_level_hint
-      layer_hint = @layer.max_level_hint
-      if hint && layer_hint
-        hint > layer_hint ? hint : layer_hint
-      else
-        hint || layer_hint
-      end
+      @layer.max_level_hint
     end
   end
 

@@ -42,6 +42,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] FmtLayer (formatted output to IO)
 - [x] FmtLayer.with_filter (per-layer level filter)
 - [x] Directive parsing (EnvFilter directive: `target[span]=level`)
+- [x] EnvFilter layer (parses env var, applies directives as subscriber filter)
 
 ## Quality Gates
 

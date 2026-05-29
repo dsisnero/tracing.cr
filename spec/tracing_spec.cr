@@ -721,3 +721,56 @@ describe "EnvFilter Directive parsing (ported from upstream filter/env/directive
     d.level.into_level.should eq(Level::DEBUG)
   end
 end
+
+# RED tests — EnvFilter layer
+describe "EnvFilter (ported from upstream filter/env)" do
+  it "filters by level from env var string" do
+    filter = Tracing::EnvFilter.new("info")
+    counting = EventCollector.new
+    subscriber = Tracing::Registry.new.with(counting).with(filter)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("pass_error")
+      info!("pass_info")
+      debug!("filter_debug")
+      trace!("filter_trace")
+    end
+
+    counting.names.should contain("pass_error")
+    counting.names.should contain("pass_info")
+    counting.names.should_not contain("filter_debug")
+    counting.names.should_not contain("filter_trace")
+  end
+
+  it "filters by target from env var string" do
+    filter = Tracing::EnvFilter.new("my_module=info,crate=error")
+    counting = EventCollector.new
+    subscriber = Tracing::Registry.new.with(counting).with(filter)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.event(Level::DEBUG, "mod_event")
+    end
+
+    counting.names.should_not contain("mod_event")
+  end
+
+  it "builds from multiple directives" do
+    filter = Tracing::EnvFilter.new("warn,my_crate=debug")
+
+    # Check directives were parsed
+    directives = filter.directives
+    directives.size.should eq(2)
+    directives[0].level.into_level.should eq(Level::WARN)
+    directives[0].target.should be_nil
+    directives[1].level.into_level.should eq(Level::DEBUG)
+    directives[1].target.should eq("my_crate")
+  end
+end
+
+private class EventCollector < Tracing::Layer
+  property names : Array(String) = [] of String
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
+    @names << event.metadata.name
+  end
+end

@@ -1,9 +1,5 @@
 module Tracing
-  # A single filtering directive parsed from an EnvFilter string.
-  #
-  # Grammar: `target[span_name]=level`
-  #
-  # Ported from upstream `tracing_subscriber::filter::env::Directive`.
+  # A single filtering directive.
   struct Directive
     getter target : String?
     getter in_span : String?
@@ -12,19 +8,10 @@ module Tracing
     def initialize(@target, @in_span, @level)
     end
 
-    # Parse a directive string.
-    #
-    # Examples:
-    #   "info" → target=nil, in_span=nil, level=INFO
-    #   "my_crate=debug" → target="my_crate", level=DEBUG
-    #   "my_crate::mod=warn" → target="my_crate::mod", level=WARN
-    #   "my_crate[my_span]=trace" → target="my_crate", in_span="my_span", level=TRACE
-    #   "off" → OFF
     def self.parse(s : String) : self
       s = s.strip
       return new(nil, nil, LevelFilter.error) if s.empty?
 
-      # Check for `=level` suffix
       target : String? = nil
       in_span : String? = nil
       level_str : String
@@ -33,10 +20,7 @@ module Tracing
         level_str = s[(idx + 1)..].strip
         target_str = s[...idx].strip
 
-        if target_str.empty?
-          target = nil
-        else
-          # Check for [span_name] suffix on target
+        unless target_str.empty?
           if bracket = target_str.rindex('[')
             if target_str.ends_with?(']')
               in_span = target_str[(bracket + 1)...-1].strip
@@ -46,7 +30,7 @@ module Tracing
               raise ArgumentError.new("unclosed bracket in directive: #{s}")
             end
           else
-            target = target_str unless target_str.empty?
+            target = target_str
           end
         end
       else
@@ -55,6 +39,43 @@ module Tracing
 
       level = LevelFilter.parse(level_str)
       new(target, in_span, level)
+    end
+  end
+
+  # A filter that parses `RUST_LOG`-style environment variable strings
+  # into filtering directives and applies them as a Layer.
+  #
+  # Ported from upstream `tracing_subscriber::filter::EnvFilter`.
+  class EnvFilter < Layer
+    getter directives : Array(Directive)
+
+    def initialize(str : String = "")
+      str = str.empty? ? (ENV["TRACE_LOG"]? || "error") : str
+      @directives = str.split(',', remove_empty: true).map(&.strip).reject(&.empty?).map do |part|
+        Directive.parse(part)
+      end
+      @directives = [Directive.parse("trace")] if @directives.empty?
+    end
+
+    def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
+      @directives.any? { |directive| directive_matches?(directive, metadata) }
+    end
+
+    def max_level_hint : LevelFilter?
+      @directives.map(&.level).reduce(nil) do |max, filter|
+        if max
+          filter > max ? filter : max
+        else
+          filter
+        end
+      end
+    end
+
+    private def directive_matches?(d : Directive, meta : Metadata) : Bool
+      if target = d.target
+        return false unless meta.target.starts_with?(target)
+      end
+      meta.level <= d.level
     end
   end
 end

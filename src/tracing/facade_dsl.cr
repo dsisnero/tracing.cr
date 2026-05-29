@@ -24,10 +24,11 @@ module Tracing
   #   Tracing.event(Level::INFO, "my_event", key: "value")
   def self.event(level : Level, name : String, **fields) : Nil
     meta = Metadata.new(name, name, level, kind: Kind::EVENT)
-    values = build_field_valueset(fields)
     dispatch = Dispatch.current
     return unless dispatch
+    return unless dispatch.enabled(meta)
 
+    values = build_field_valueset(fields)
     event = Event.new(meta, values)
     dispatch.event(event)
   end
