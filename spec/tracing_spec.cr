@@ -673,3 +673,51 @@ describe "FmtLayer with_filter" do
     output.should contain("should also appear")
   end
 end
+
+# RED tests — EnvFilter directive parsing
+describe "EnvFilter Directive parsing (ported from upstream filter/env/directive.rs)" do
+  it "parses a bare level directive" do
+    d = Tracing::Directive.parse("info")
+    d.level.into_level.should eq(Level::INFO)
+    d.target.should be_nil
+  end
+
+  it "parses a target=level directive" do
+    d = Tracing::Directive.parse("my_crate=debug")
+    d.level.into_level.should eq(Level::DEBUG)
+    d.target.should eq("my_crate")
+  end
+
+  it "parses a scoped target=level directive" do
+    d = Tracing::Directive.parse("my_crate::module=warn")
+    d.level.into_level.should eq(Level::WARN)
+    d.target.should eq("my_crate::module")
+  end
+
+  it "parses a target[span_name]=level directive" do
+    d = Tracing::Directive.parse("my_crate[my_span]=trace")
+    d.level.into_level.should eq(Level::TRACE)
+    d.target.should eq("my_crate")
+    d.in_span.should eq("my_span")
+  end
+
+  it "parses OFF directive" do
+    d = Tracing::Directive.parse("off")
+    d.level.into_level.should be_nil
+  end
+
+  it "rejects invalid syntax" do
+    expect_raises(ArgumentError) { Tracing::Directive.parse("bad=stuff=here") }
+  end
+
+  it "parses default/empty as ERROR" do
+    d = Tracing::Directive.parse("")
+    d.level.into_level.should eq(Level::ERROR)
+  end
+
+  it "parses level with whitespace" do
+    d = Tracing::Directive.parse(" my_crate = debug ")
+    d.target.should eq("my_crate")
+    d.level.into_level.should eq(Level::DEBUG)
+  end
+end
