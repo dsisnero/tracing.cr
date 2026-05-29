@@ -29,14 +29,14 @@ describe "Level comparisons (ported from upstream metadata.rs)" do
   end
 
   it "TRACE == TRACE" do
-    (Level::TRACE == Level::TRACE).should be_true
+    (Level::TRACE == LevelFilter.trace).should be_true
   end
 end
 
 # Ported from vendor/tracing/tracing-core/src/metadata.rs doc examples
 describe "LevelFilter comparisons (ported from upstream metadata.rs)" do
   it "OFF < TRACE" do
-    (LevelFilter.off < Level::TRACE).should be_true
+    (LevelFilter.off < LevelFilter.trace).should be_true
   end
 
   it "TRACE > DEBUG" do
@@ -82,7 +82,7 @@ describe Tracing::Core::Level do
       Level.parse("warn").should eq(Level::WARN)
       Level.parse("info").should eq(Level::INFO)
       Level.parse("debug").should eq(Level::DEBUG)
-      Level.parse("trace").should eq(Level::TRACE)
+      Level.parse("trace").should eq(LevelFilter.trace)
     end
 
     it "parses numeric strings" do
@@ -114,7 +114,7 @@ describe Tracing::Core::LevelFilter do
 
     it "can be constructed from a Level" do
       f = LevelFilter.from_level(Level::TRACE)
-      f.into_level.should eq(Level::TRACE)
+      f.into_level.should eq(LevelFilter.trace)
     end
   end
 
@@ -696,7 +696,7 @@ describe "EnvFilter Directive parsing (ported from upstream filter/env/directive
 
   it "parses a target[span_name]=level directive" do
     d = Tracing::Directive.parse("my_crate[my_span]=trace")
-    d.level.into_level.should eq(Level::TRACE)
+    d.level.into_level.should eq(LevelFilter.trace)
     d.target.should eq("my_crate")
     d.in_span.should eq("my_span")
   end
@@ -956,5 +956,45 @@ describe "subscriber convenience (ported from upstream tracing::subscriber)" do
     end
 
     Dispatch.current.should eq(prior)
+  end
+end
+
+describe "Targets filter (ported from upstream filter/targets.rs)" do
+  it "matches events by target prefix" do
+    filter = Tracing::Targets.new
+      .with_target("my_crate", Level::INFO)
+      .with_default(LevelFilter.trace)
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+
+    meta = Metadata.new("ev", "my_crate::module", Level::DEBUG)
+    filter.enabled?(meta, ctx).should be_false
+
+    meta2 = Metadata.new("ev", "my_crate::module", Level::ERROR)
+    filter.enabled?(meta2, ctx).should be_true
+
+    meta3 = Metadata.new("ev", "other", Level::DEBUG)
+    filter.enabled?(meta3, ctx).should be_true
+  end
+
+  it "blocks unmatched targets when default is OFF" do
+    filter = Tracing::Targets.new
+      .with_target("important", Level::INFO)
+      .with_default(LevelFilter.off)
+
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+
+    meta = Metadata.new("ev", "unimportant", Level::ERROR)
+    filter.enabled?(meta, ctx).should be_false
+
+    meta2 = Metadata.new("ev", "important::thing", Level::ERROR)
+    filter.enabled?(meta2, ctx).should be_true
+  end
+
+  it "builder exposes default_level" do
+    targets = Tracing::Targets.new
+      .with_target("alpha", Level::ERROR)
+      .with_default(LevelFilter.off)
+
+    targets.default_level.into_level.should be_nil
   end
 end
