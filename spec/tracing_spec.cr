@@ -904,3 +904,34 @@ describe "FmtLayer span events configuration" do
     output.should_not contain("new")
   end
 end
+
+# RED tests — FilterFn (closure-based filter)
+describe "FilterFn (ported from upstream filter/filter_fn.rs)" do
+  it "filters using a closure" do
+    filter = Tracing::FilterFn.new { |meta| meta.level <= Level::WARN }
+    counting = EventCollector.new
+    filtered = counting.with_fn_filter(filter)
+    subscriber = Tracing::Registry.new.with(filtered)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("pass")
+      info!("blocked")
+    end
+
+    counting.names.should contain("pass")
+    counting.names.should_not contain("blocked")
+  end
+
+  it "passes events when closure returns true" do
+    filter = Tracing::FilterFn.new { |_meta| true }
+    subscriber = Tracing::Registry.new.with(filter)
+    counting = EventCollector.new
+    subscriber = subscriber.with(counting)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("always_pass")
+    end
+
+    counting.names.should contain("always_pass")
+  end
+end
