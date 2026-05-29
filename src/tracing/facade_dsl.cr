@@ -58,6 +58,19 @@ module Tracing
     event(Level::ERROR, name, **fields)
   end
 
+  # Wrap a block in a span context.
+  #
+  # Ported from upstream `#[instrument]` attribute.
+  #
+  # Usage:
+  #   Tracing.instrument("my_func", arg: value) do
+  #     # work happens inside span "my_func"
+  #   end
+  def self.instrument(name : String, **fields, & : -> T) : T forall T
+    s = span(Level::INFO, name, **fields)
+    s.in_scope { yield }
+  end
+
   # Build a Field::ValueSet from named tuple fields.
   private def self.build_field_valueset(fields : NamedTuple) : Field::ValueSet
     names = fields.keys.to_a.map { |k| k.to_s.as(String) }

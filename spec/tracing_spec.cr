@@ -1481,3 +1481,19 @@ describe "FlameLayer (ported from tracing-flame/src/lib.rs)" do
     File.delete("tmp/flame_test.folded") if File.exists?("tmp/flame_test.folded")
   end
 end
+
+# RED tests — tracing-attributes @[Instrument]
+describe "Tracing.instrument (ported from tracing-attributes)" do
+  it "Tracing.instrument wraps block in a span" do
+    observer = SpanObserver.new
+    subscriber = Tracing::Registry.new.with(observer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      result = Tracing.instrument("my_func", arg: 42) { 100 }
+      result.should eq(100)
+    end
+
+    observer.spans.size.should eq(1)
+    observer.spans[0].metadata.name.should eq("my_func")
+  end
+end

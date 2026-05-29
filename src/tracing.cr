@@ -24,6 +24,7 @@ require "./tracing-subscriber/mock"
 require "./tracing-subscriber/span_trace"
 require "./tracing-subscriber/flame"
 require "./tracing/subscriber_conv"
+require "./tracing/instrument_annotation"
 
 module Tracing
   VERSION = "0.1.0"
