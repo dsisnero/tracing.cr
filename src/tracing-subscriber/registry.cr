@@ -97,5 +97,10 @@ module Tracing
     def self.default : self
       new
     end
+
+    # Set this registry (with its layers) as the global default subscriber.
+    def init : Nil
+      Tracing::Subscriber.set_global_default(self)
+    end
   end
 end

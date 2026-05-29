@@ -155,6 +155,10 @@ module Tracing
     def with(layer : Nil) : Layered(Layered(S))
       Layered.new(self, NoOpLayer.new)
     end
+
+    def init : Nil
+      Tracing::Subscriber.set_global_default(self)
+    end
   end
 
   # A no-op layer that passes everything through.

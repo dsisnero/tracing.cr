@@ -49,6 +49,10 @@ module Tracing
   class EnvFilter < Layer
     getter directives : Array(Directive)
 
+    def self.from_env(var : String = "TRACE_LOG") : self
+      new(ENV[var]? || "")
+    end
+
     def initialize(str : String = "")
       str = str.empty? ? (ENV["TRACE_LOG"]? || "error") : str
       @directives = str.split(',', remove_empty: true).map(&.strip).reject(&.empty?).map do |part|

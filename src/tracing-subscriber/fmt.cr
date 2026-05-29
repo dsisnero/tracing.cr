@@ -95,19 +95,17 @@ module Tracing
 
     private def level_color(level : Level) : String
       return "" unless @use_ansi
-      color = case level
-              in .error? then Lipgloss::Color::RED
-              in .warn?  then Lipgloss::Color::YELLOW
-              in .info?  then Lipgloss::Color::GREEN
-              in .debug? then Lipgloss::Color::BLUE
-              in .trace? then Lipgloss::Color::CYAN
-              end
-      # Use simple ANSI foreground for performance (one per event)
-      Lipgloss.style { |s| s.foreground(color) }.render_start
+      case level
+      in .error? then "\e[31m"
+      in .warn?  then "\e[33m"
+      in .info?  then "\e[32m"
+      in .debug? then "\e[34m"
+      in .trace? then "\e[36m"
+      end
     end
 
     private def reset_color : String
-      @use_ansi ? Lipgloss::Style.reset_string : ""
+      @use_ansi ? "\e[0m" : ""
     end
 
     def enabled?(metadata : Metadata, ctx : LayerContext) : Bool

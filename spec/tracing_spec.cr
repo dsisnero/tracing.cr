@@ -1174,3 +1174,34 @@ describe "FmtLayer with_ansi" do
     output.should_not contain("\e[")
   end
 end
+
+# RED tests — EnvFilter::from_env, subscriber.init
+describe "EnvFilter.from_env" do
+  it "reads TRACE_LOG environment variable" do
+    ENV["TRACE_LOG"] = "info,my_crate=debug"
+    begin
+      filter = Tracing::EnvFilter.from_env
+      filter.directives.size.should eq(2)
+    ensure
+      ENV.delete("TRACE_LOG")
+    end
+  end
+
+  it "defaults to error when env var not set" do
+    ENV.delete("TRACE_LOG")
+    filter = Tracing::EnvFilter.from_env
+    filter.directives[0].level.into_level.should eq(Level::ERROR)
+  end
+end
+
+describe "Registry#init" do
+  it "sets self as global default" do
+    begin
+      registry = Tracing::Registry.new
+      registry.init
+      Dispatch.default.try(&.subscriber).should eq(registry)
+    rescue ex : Tracing::Core::SetGlobalDefaultError
+      # global already set, skip
+    end
+  end
+end
