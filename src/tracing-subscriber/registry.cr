@@ -13,9 +13,11 @@ module Tracing
       getter metadata : Metadata
       getter parent : Core::Span::Id?
       property ref_count : Int32
+      getter extensions : Extensions
 
       def initialize(@id, @name, @metadata, @parent = nil)
         @ref_count = 1
+        @extensions = Extensions.new
       end
     end
 

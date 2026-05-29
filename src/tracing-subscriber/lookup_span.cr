@@ -1,19 +1,31 @@
 module Tracing
-  # A reference to span data retrieved from a LookupSpan subscriber.
+  # A reference to span data with mutable extensions access.
   #
   # Ported from upstream `tracing_subscriber::registry::SpanRef`.
   struct SpanRef
     getter name : String
     getter metadata : Metadata
     getter parent : Core::Span::Id?
+    @registry : Registry
+    @span_id : Core::Span::Id
 
-    def initialize(@name, @metadata, @parent = nil)
+    def initialize(@name, @metadata, @parent, @registry, @span_id)
+    end
+
+    # Get immutable access to span extensions.
+    def extensions : Extensions?
+      @registry.span_data(@span_id).try(&.extensions)
+    end
+
+    # Get mutable access to span extensions.
+    def extensions_mut : ExtensionsMut?
+      data = @registry.span_data(@span_id)
+      return unless data
+      ExtensionsMut.new(data.extensions)
     end
   end
 
   # Trait for subscribers that can look up span data by ID.
-  #
-  # Ported from upstream `tracing_subscriber::registry::LookupSpan`.
   module LookupSpan
     abstract def span_data(id : Core::Span::Id) : Registry::SpanData?
     abstract def span(id : Core::Span::Id) : SpanRef?
@@ -23,12 +35,11 @@ module Tracing
   class Registry
     include LookupSpan
 
-    # Returns a SpanRef for the span with the given ID.
     def span(id : Core::Span::Id) : SpanRef?
       data = span_data(id)
       return unless data
 
-      SpanRef.new(data.name, data.metadata, data.parent)
+      SpanRef.new(data.name, data.metadata, data.parent, self, id)
     end
   end
 
@@ -55,6 +66,12 @@ module Tracing
       end
 
       nil
+    end
+
+    # Look up span data from the context's subscriber.
+    def span(id : Core::Span::Id) : SpanRef?
+      subscriber = @subscriber.as?(LookupSpan)
+      subscriber.try(&.span(id))
     end
   end
 end

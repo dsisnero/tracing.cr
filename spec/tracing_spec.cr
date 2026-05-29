@@ -589,3 +589,39 @@ private class EventCountingLayer < Tracing::Layer
     @count += 1
   end
 end
+
+# RED tests — Extensions integration with Registry
+describe "Extensions integration (per-span data)" do
+  it "layer stores and retrieves data via span extensions" do
+    layer = SpanDataLayer.new
+    registry = Tracing::Registry.new
+    subscriber = registry.with(layer)
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("data_span").in_scope do
+        info!("event_in_span")
+      end
+    end
+
+    layer.stored_value.should eq(42_i64)
+  end
+end
+
+private class SpanDataLayer < Tracing::Layer
+  property stored_value : Int64? = nil
+
+  def on_new_span(attrs : Tracing::Core::Span::Attributes, id : Tracing::CoreSpan::Id, ctx : Tracing::LayerContext)
+    span = ctx.span(id)
+    if span
+      exts = span.extensions_mut
+      exts.try(&.insert(42_i64))
+    end
+  end
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
+    span = ctx.event_span(event)
+    if span
+      exts = span.extensions
+      @stored_value = exts.try(&.get(Int64))
+    end
+  end
+end
