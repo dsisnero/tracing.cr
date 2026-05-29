@@ -89,4 +89,70 @@ module Tracing
       close
     end
   end
+
+  # Rotation schedule for rolling log files.
+  enum Rotation
+    MINUTELY
+    HOURLY
+    DAILY
+    NEVER
+  end
+
+  # A file appender that rotates log files on a fixed schedule.
+  class RollingFileAppender
+    @rotation : Rotation
+    @directory : String
+    @prefix : String
+    @file : File?
+    @current_date : String?
+
+    def initialize(@rotation : Rotation, @directory : String, @prefix : String)
+      Dir.mkdir_p(@directory)
+      rotate
+    end
+
+    def write(slice : Bytes) : Nil
+      rotate_if_needed
+      @file.try(&.write(slice))
+      @file.try(&.flush)
+    end
+
+    def close : Nil
+      @file.try(&.close)
+      @file = nil
+    end
+
+    private def rotate_if_needed : Nil
+      current = date_suffix
+      if @current_date != current
+        close
+        @current_date = current
+        filename = if @rotation.never?
+                     File.join(@directory, @prefix)
+                   else
+                     File.join(@directory, "#{@prefix}.#{current}")
+                   end
+        @file = File.open(filename, mode: "a")
+      end
+    end
+
+    private def rotate : Nil
+      @current_date = nil
+      rotate_if_needed
+    end
+
+    private def date_suffix : String
+      t = Time.local
+      case @rotation
+      in .minutely? then t.to_s("%Y-%m-%d-%H-%M")
+      in .hourly?   then t.to_s("%Y-%m-%d-%H")
+      in .daily?    then t.to_s("%Y-%m-%d")
+      in .never?    then ""
+      end
+    end
+
+    def finalize
+      close
+    end
+  end
 end

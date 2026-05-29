@@ -1394,3 +1394,33 @@ describe "MockSubscriber (ported from tracing-mock/src/subscriber.rs)" do
     end
   end
 end
+
+# RED tests — RollingFileAppender
+describe "RollingFileAppender" do
+  it "creates a file with timestamped name for daily rotation" do
+    appender = Tracing::RollingFileAppender.new(
+      Tracing::Rotation::DAILY,
+      "tmp/logs",
+      "test"
+    )
+    appender.should be_a(Tracing::RollingFileAppender)
+    appender.close
+  end
+
+  it "writes to the current log file" do
+    appender = Tracing::RollingFileAppender.new(
+      Tracing::Rotation::NEVER,
+      "tmp/logs",
+      "write_test"
+    )
+    appender.write("test line\n".to_slice)
+    appender.close
+
+    files = Dir["tmp/logs/write_test*"]
+    files.size.should be > 0
+    content = File.read(files[0])
+    content.should contain("test line")
+  ensure
+    Dir["tmp/logs/write_test*"].each { |file| File.delete(file) }
+  end
+end
