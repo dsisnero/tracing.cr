@@ -76,8 +76,12 @@ module Tracing
 
     # Execute a block inside this span.
     def in_scope(& : -> T) : T forall T
-      _guard = enter
-      yield
+      guard = enter
+      begin
+        yield
+      ensure
+        guard.exit
+      end
     end
 
     # Record fields on this span.
@@ -113,12 +117,23 @@ module Tracing
   end
 
   # A guard that exits a span when dropped.
-  #
-  # Returned by `Span#enter`.
   class Entered
     @span : Span
+    @exited : Bool
 
     def initialize(@span : Span)
+      @exited = false
+    end
+
+    def exit : Span
+      return @span if @exited
+      @span.exit_span
+      @exited = true
+      @span
+    end
+
+    def finalize
+      @span.exit_span unless @exited
     end
 
     # Explicitly exit the span, returning it.

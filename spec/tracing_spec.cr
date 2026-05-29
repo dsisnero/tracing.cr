@@ -625,3 +625,39 @@ private class SpanDataLayer < Tracing::Layer
     end
   end
 end
+
+# RED tests — fmt layer (formatted output)
+describe "FmtLayer (ported from upstream fmt/fmt_layer.rs)" do
+  it "formats events to a writer" do
+    io = IO::Memory.new
+    fmt_layer = Tracing::FmtLayer.new(io)
+    subscriber = Tracing::Registry.new.with(fmt_layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("hello world")
+      warn!("something happened")
+    end
+
+    output = io.to_s
+    output.should contain("hello world")
+    output.should contain("WARN")
+  end
+
+  it "formats spans with enter/exit" do
+    io = IO::Memory.new
+    fmt_layer = Tracing::FmtLayer.new(io)
+    subscriber = Tracing::Registry.new.with(fmt_layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("my_span").in_scope do
+        info!("inside")
+      end
+    end
+
+    output = io.to_s
+    output.should contain("my_span")
+    output.should contain("enter")
+    output.should contain("inside")
+    output.should contain("exit")
+  end
+end
