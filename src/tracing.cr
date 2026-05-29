@@ -17,6 +17,7 @@ require "./tracing-subscriber/filter"
 require "./tracing-subscriber/fmt"
 require "./tracing-subscriber/env_filter"
 require "./tracing-subscriber/filter_fn"
+require "./tracing/subscriber_conv"
 
 module Tracing
   VERSION = "0.1.0"

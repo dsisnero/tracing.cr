@@ -935,3 +935,26 @@ describe "FilterFn (ported from upstream filter/filter_fn.rs)" do
     counting.names.should contain("always_pass")
   end
 end
+
+describe "subscriber convenience (ported from upstream tracing::subscriber)" do
+  it "with_default wraps subscriber in Dispatch" do
+    subscriber = Tracing::Registry.new
+    seen = nil
+
+    Tracing::Subscriber.with_default(subscriber) do
+      seen = Dispatch.current.try(&.subscriber)
+    end
+
+    seen.should eq(subscriber)
+  end
+
+  it "with_default restores prior dispatch" do
+    prior = Dispatch.current
+    subscriber = Tracing::Registry.new
+
+    Tracing::Subscriber.with_default(subscriber) do
+    end
+
+    Dispatch.current.should eq(prior)
+  end
+end
