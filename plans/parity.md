@@ -7,13 +7,15 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-core | 0.1.36 | ✓ Complete | `plans/inventory/rust_port_inventory.tsv` |
 | tracing | 0.1.44 | ✓ Complete | — |
 | tracing-subscriber | 0.3.23 | ✓ Complete | — |
-| tracing-macros | 0.1.0 | Not started | `plans/inventory/tracing_macros_port_inventory.tsv` |
-| tracing-log | 0.2.0 | Not started | `plans/inventory/tracing_log_port_inventory.tsv` (34 items) |
-| tracing-appender | 0.2.0 | Not started | `plans/inventory/tracing_appender_port_inventory.tsv` (49 items) |
-| tracing-mock | 0.1.0 | Not started | — |
+| tracing-macros | 0.1.0 | ✓ Complete | — |
+| tracing-log | 0.2.0 | ✓ Complete | `plans/inventory/tracing_log_port_inventory.tsv` |
+| tracing-appender | 0.2.0 | ✓ Complete | `plans/inventory/tracing_appender_port_inventory.tsv` |
+| tracing-mock | 0.1.0 | ✓ Complete | — |
+| tracing-error | 0.1.0 | ✓ Complete | — |
+| tracing-flame | 0.1.0 | ✓ Complete | — |
+| tracing-attributes | 0.1.0 | ✓ Complete | — |
 | tracing-serde | 0.1.0 | Not started | — |
-| tracing-error | 0.1.0 | Not started | — |
-| tracing-flame | 0.1.0 | Not started | — |
+| tracing-opentelemetry | 0.33.0 | Not started | `plans/inventory/tracing_opentelemetry_port_inventory.tsv` (69 items) |
 
 ## tracing-core ✓
 
@@ -139,3 +141,75 @@ crystal spec
 ./scripts/generate_port_inventory.sh . plans/inventory/tracing_log_port_inventory.tsv vendor/tracing/tracing-log/src rust 1
 ./scripts/generate_port_inventory.sh . plans/inventory/tracing_appender_port_inventory.tsv vendor/tracing/tracing-appender/src rust 1
 ```
+
+## tracing-opentelemetry
+
+Upstream: `vendor/tracing-opentelemetry/` (pinned at v0.33.0, commit `1d5422f`)
+69 items in manifest.
+
+Bridges `tracing` spans/events to [OpenTelemetry](https://opentelemetry.io)-compatible
+distributed tracing systems.
+
+### Core API
+
+- [ ] `OpenTelemetryLayer` — tracing Layer that converts spans/events to OTel
+- [ ] `layer()` free function — creates default OpenTelemetryLayer
+- [ ] `.with_tracer(tracer)` — configure OTel tracer
+- [ ] `PreSampledTracer` — pre-sampled tracer wrapper
+
+### Span Conversion
+
+- [ ] Span ID → OTel `SpanId` mapping
+- [ ] Trace ID → OTel `TraceId` (from parent context or generated)
+- [ ] Span metadata → OTel span name
+- [ ] Span enter/exit → OTel span start/end
+- [ ] Span events → OTel span events
+- [ ] Span status → OTel status (from `otel.status_code` field)
+- [ ] Span kind → OTel `SpanKind` (from `otel.kind` field)
+- [ ] Dynamic span name via `otel.name` field
+
+### Context Propagation
+
+- [ ] Extract OTel context from incoming request headers
+- [ ] Inject OTel context into outgoing request headers
+- [ ] `OtelData` extension stored per-span for context propagation
+- [ ] `OpenTelemetrySpanExt` trait — set_parent, context, parent_context
+
+### Error Handling
+
+- [ ] `with_error_events_to_exceptions` — convert error events to OTel exceptions
+- [ ] `with_error_events_to_status` — set span status from error events
+- [ ] `with_error_fields_to_exceptions` — convert error fields to exceptions
+- [ ] `with_error_records_to_exceptions` — convert span error records to exceptions
+
+### Configuration
+
+- [ ] `with_level(Level)` — filter by verbosity level
+- [ ] `with_target(bool)` — include/exclude span target
+- [ ] `with_location(bool)` — include/exclude span source location
+- [ ] `with_threads(bool)` — include/exclude thread info
+- [ ] `with_tracked_inactivity(bool)` — track span inactivity duration
+- [ ] `with_context_activation(bool)` — activate OTel context on span enter
+
+### Metrics (deferred)
+
+- [ ] `MetricsLayer` — convert tracing events to OTel metrics
+- [ ] `ObservableGauge`, `Histogram`, `Counter` metric types
+- [ ] Metric attribute conversion from tracing fields
+
+### Dependencies (Crystal)
+
+Requires a Crystal OpenTelemetry shard providing:
+- `OpenTelemetry::Trace::Tracer` interface
+- `OpenTelemetry::Trace::Span` interface
+- `OpenTelemetry::Context` propagation
+- `OpenTelemetry::SDK::Trace::TracerProvider`
+- Span exporter (e.g., `opentelemetry-stdout`, `opentelemetry-otlp`)
+
+### Notes
+
+This crate depends on an external OpenTelemetry SDK for Crystal. Without a
+mature Crystal OTel implementation, this port is blocked. Consider:
+1. Porting `opentelemetry-rust` to Crystal first, or
+2. Creating a minimal `Tracer` interface that downstream users implement
+3. Using the `opentelemetry` Crystal shard if one exists

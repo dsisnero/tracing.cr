@@ -1,3 +1,6 @@
 [submodule "vendor/tracing"]
 	path = vendor/tracing
 	url = https://github.com/tokio-rs/tracing.git
+[submodule "vendor/tracing-opentelemetry"]
+	path = vendor/tracing-opentelemetry
+	url = https://github.com/tokio-rs/tracing-opentelemetry.git
