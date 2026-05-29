@@ -20,6 +20,7 @@ require "./tracing-subscriber/filter_fn"
 require "./tracing-subscriber/targets"
 require "./tracing-subscriber/log_tracer"
 require "./tracing-subscriber/appender"
+require "./tracing-subscriber/mock"
 require "./tracing/subscriber_conv"
 
 module Tracing

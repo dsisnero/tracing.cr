@@ -1344,3 +1344,53 @@ describe "NonBlocking (ported from tracing-appender/src/non_blocking.rs)" do
     guard.close
   end
 end
+
+# RED tests — tracing-mock MockSubscriber
+describe "MockSubscriber (ported from tracing-mock/src/subscriber.rs)" do
+  it "records events with their fields" do
+    mock = Tracing::MockSubscriber.new
+    Dispatch.with_default(Dispatch.new(mock)) do
+      info!("test_event", user: "alice")
+    end
+
+    mock.events.size.should eq(1)
+    mock.events[0].metadata.name.should eq("test_event")
+  end
+
+  it "records spans with enter/exit" do
+    mock = Tracing::MockSubscriber.new
+    Dispatch.with_default(Dispatch.new(mock)) do
+      span!(Level::INFO, "test_span").in_scope do
+        info!("inside")
+      end
+    end
+
+    mock.spans.size.should eq(1)
+    mock.enters.size.should eq(1)
+    mock.exits.size.should eq(1)
+  end
+
+  it "assert_finished checks expectations" do
+    mock = Tracing::MockSubscriber.new
+      .expect_event_named("expected_event")
+
+    Dispatch.with_default(Dispatch.new(mock)) do
+      info!("expected_event")
+    end
+
+    mock.assert_finished
+  end
+
+  it "assert_finished raises on unmet expectations" do
+    mock = Tracing::MockSubscriber.new
+      .expect_event_named("never_emitted")
+
+    Dispatch.with_default(Dispatch.new(mock)) do
+      # nothing emitted
+    end
+
+    expect_raises(Exception, "never_emitted") do
+      mock.assert_finished
+    end
+  end
+end
