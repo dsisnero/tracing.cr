@@ -1308,3 +1308,39 @@ describe "LogTracer (ported from tracing-log/src/log_tracer.rs)" do
     tracer.test_severity(::Log::Severity::Trace).should eq(Tracing::Level::TRACE)
   end
 end
+
+# RED tests — tracing-appender NonBlocking
+describe "NonBlocking (ported from tracing-appender/src/non_blocking.rs)" do
+  it "writes events through a worker fiber" do
+    io = IO::Memory.new
+    nb, guard = Tracing::NonBlocking.new(io)
+    writer = nb.make_writer
+
+    writer.write("hello\n".to_slice)
+    writer.write("world\n".to_slice)
+
+    # Close the guard to flush and wait
+    guard.close
+    output = io.to_s
+    output.should contain("hello")
+    output.should contain("world")
+  end
+
+  it "WorkerGuard flushes on close" do
+    io = IO::Memory.new
+    nb, guard = Tracing::NonBlocking.new(io)
+    writer = nb.make_writer
+
+    writer.write("buffered\n".to_slice)
+    guard.close
+
+    io.to_s.should contain("buffered")
+  end
+
+  it "builder accepts custom buffer size" do
+    io = IO::Memory.new
+    nb, guard = Tracing::NonBlocking.builder(io, buffer_size: 1024)
+    nb.should be_a(Tracing::NonBlocking)
+    guard.close
+  end
+end
