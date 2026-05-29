@@ -1296,3 +1296,15 @@ describe "trace_dbg! macro (ported from tracing-macros/src/lib.rs)" do
     log.names.should contain("trace_dbg")
   end
 end
+require "log"
+
+# RED tests — tracing-log LogTracer
+describe "LogTracer (ported from tracing-log/src/log_tracer.rs)" do
+  it "severity_to_level maps correctly" do
+    tracer = Tracing::LogTracer.new
+    tracer.test_severity(::Log::Severity::Info).should eq(Tracing::Level::INFO)
+    tracer.test_severity(::Log::Severity::Error).should eq(Tracing::Level::ERROR)
+    tracer.test_severity(::Log::Severity::Debug).should eq(Tracing::Level::DEBUG)
+    tracer.test_severity(::Log::Severity::Trace).should eq(Tracing::Level::TRACE)
+  end
+end

@@ -18,6 +18,7 @@ require "./tracing-subscriber/fmt"
 require "./tracing-subscriber/env_filter"
 require "./tracing-subscriber/filter_fn"
 require "./tracing-subscriber/targets"
+require "./tracing-subscriber/log_tracer"
 require "./tracing/subscriber_conv"
 
 module Tracing
