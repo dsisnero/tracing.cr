@@ -15,8 +15,18 @@ module Tracing
       when "producer" then OpenTelemetry::API::Span::Kind::Producer
       when "consumer" then OpenTelemetry::API::Span::Kind::Consumer
       when "internal" then OpenTelemetry::API::Span::Kind::Internal
-      else                 OpenTelemetry::API::Span::Kind::Internal
+      else OpenTelemetry::API::Span::Kind::Internal
       end
+    end
+
+    def self.status_from_code(code : String?) : OpenTelemetry::API::Status
+      status = OpenTelemetry::API::Status.new
+      status.code = case code
+                     when "Ok"    then OpenTelemetry::API::AbstractStatus::StatusCode::Ok
+                     when "Error" then OpenTelemetry::API::AbstractStatus::StatusCode::Error
+                     else              OpenTelemetry::API::AbstractStatus::StatusCode::Unset
+                     end
+      status
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil

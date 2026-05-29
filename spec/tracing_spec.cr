@@ -1546,3 +1546,26 @@ describe "OpenTelemetry span kind mapping" do
     kind.should eq(OpenTelemetry::API::Span::Kind::Internal)
   end
 end
+
+# RED tests — OTel status code mapping
+describe "OpenTelemetry status code mapping" do
+  it "maps Ok status" do
+    status = Tracing::OpenTelemetryLayer.status_from_code("Ok")
+    status.code.ok?.should be_true
+  end
+
+  it "maps Error status" do
+    status = Tracing::OpenTelemetryLayer.status_from_code("Error")
+    status.code.error?.should be_true
+  end
+
+  it "defaults to Unset for unknown" do
+    status = Tracing::OpenTelemetryLayer.status_from_code("Unknown")
+    status.code.unset?.should be_true
+  end
+
+  it "defaults to Unset for nil" do
+    status = Tracing::OpenTelemetryLayer.status_from_code(nil)
+    status.code.unset?.should be_true
+  end
+end
