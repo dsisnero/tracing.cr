@@ -1144,3 +1144,33 @@ describe "FmtLayer pretty mode" do
     output.should contain("inside")
   end
 end
+
+# RED tests — FmtLayer with_ansi
+describe "FmtLayer with_ansi" do
+  it "adds ANSI color codes to level output" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_ansi(true)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("ansi_error")
+    end
+
+    output = io.to_s
+    output.should contain("\e[")
+    output.should contain("ERROR")
+  end
+
+  it "omits ANSI codes when disabled" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_ansi(false)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("no_ansi")
+    end
+
+    output = io.to_s
+    output.should_not contain("\e[")
+  end
+end

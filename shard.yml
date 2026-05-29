@@ -14,3 +14,7 @@ development_dependencies:
     version: ~> 1.6
   perf_tools:
     github: crystal-lang/perf-tools
+
+dependencies:
+  lipgloss:
+    github: dsisnero/lipgloss

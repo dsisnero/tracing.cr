@@ -24,6 +24,7 @@ module Tracing
     @pretty_mode : Bool
     @span_events : FmtSpan
     @make_writer : (-> IO)?
+    @use_ansi : Bool
 
     def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
       @io = io
@@ -34,6 +35,7 @@ module Tracing
       @pretty_mode = false
       @span_events = FmtSpan::FULL
       @make_writer = nil
+      @use_ansi = false
     end
 
     def compact : self
@@ -86,6 +88,28 @@ module Tracing
       self
     end
 
+    def with_ansi(use : Bool) : self
+      @use_ansi = use
+      self
+    end
+
+    private def level_color(level : Level) : String
+      return "" unless @use_ansi
+      color = case level
+              in .error? then Lipgloss::Color::RED
+              in .warn?  then Lipgloss::Color::YELLOW
+              in .info?  then Lipgloss::Color::GREEN
+              in .debug? then Lipgloss::Color::BLUE
+              in .trace? then Lipgloss::Color::CYAN
+              end
+      # Use simple ANSI foreground for performance (one per event)
+      Lipgloss.style { |s| s.foreground(color) }.render_start
+    end
+
+    private def reset_color : String
+      @use_ansi ? Lipgloss::Style.reset_string : ""
+    end
+
     def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
       if f = @filter
         f.enabled?(metadata, ctx)
@@ -106,7 +130,9 @@ module Tracing
         io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
       end
       if @show_level
-        io << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << " "
+        color = level_color(event.metadata.level)
+        reset = reset_color
+        io << color << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << reset << " "
       end
       if @show_target
         io << event.metadata.target << " "
