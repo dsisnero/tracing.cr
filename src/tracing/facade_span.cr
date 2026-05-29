@@ -69,10 +69,13 @@ module Tracing
       end
     end
 
-    def record(field : Field::Field, value) : Nil
+    def record(**fields) : Nil
       return unless inner = @inner
       vs = Field::ValueSet.new
-      vs.record(field, value)
+      fields.each do |key, value|
+        f = Field::Field.new(key.to_s)
+        vs.record(f, value)
+      end
       inner.subscriber.record(inner.id, Core::Span::Record.new(vs))
     end
 

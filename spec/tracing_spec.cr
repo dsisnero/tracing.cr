@@ -1232,3 +1232,30 @@ describe "Layer#and_then combinator" do
     subscriber.should be_a(Tracing::Layered(Tracing::Registry))
   end
 end
+
+# RED tests — Span field recording
+describe "Span field recording (ported from upstream span.rs)" do
+  it "records additional fields on a span after creation" do
+    log = SpanRecordLog.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::INFO, "record_span", initial: 1)
+      s.record(key: "value")
+    end
+
+    log.recorded_fields.should contain("record")
+  end
+end
+
+private class SpanRecordLog < Tracing::Layer
+  property recorded_fields : Array(String) = [] of String
+
+  def on_new_span(attrs : Tracing::Core::Span::Attributes, id : Tracing::CoreSpan::Id, ctx : Tracing::LayerContext)
+    @recorded_fields << "new"
+  end
+
+  def on_record(id : Tracing::CoreSpan::Id, values : Tracing::Core::Span::Record, ctx : Tracing::LayerContext)
+    @recorded_fields << "record"
+  end
+end
