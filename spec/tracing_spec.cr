@@ -1569,3 +1569,23 @@ describe "OpenTelemetry status code mapping" do
     status.code.unset?.should be_true
   end
 end
+
+# RED tests — OTel error events → exceptions
+describe "OpenTelemetry error-to-exception mapping" do
+  it "detects error events" do
+    layer = Tracing::OpenTelemetryLayer.new
+    meta = Metadata.new("test", "test", Level::ERROR, kind: Kind::EVENT)
+    layer.error_event?(meta).should be_true
+
+    meta2 = Metadata.new("test", "test", Level::INFO, kind: Kind::EVENT)
+    layer.error_event?(meta2).should be_false
+  end
+
+  it "creates exception attributes from event fields" do
+    layer = Tracing::OpenTelemetryLayer.new
+    attrs = layer.exception_attributes("test error", "backtrace here")
+    attrs.has_key?("exception.message").should be_true
+    attrs.has_key?("exception.stacktrace").should be_true
+    attrs["exception.message"].should eq("test error")
+  end
+end

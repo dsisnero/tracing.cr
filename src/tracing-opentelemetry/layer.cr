@@ -15,17 +15,17 @@ module Tracing
       when "producer" then OpenTelemetry::API::Span::Kind::Producer
       when "consumer" then OpenTelemetry::API::Span::Kind::Consumer
       when "internal" then OpenTelemetry::API::Span::Kind::Internal
-      else OpenTelemetry::API::Span::Kind::Internal
+      else                 OpenTelemetry::API::Span::Kind::Internal
       end
     end
 
     def self.status_from_code(code : String?) : OpenTelemetry::API::Status
       status = OpenTelemetry::API::Status.new
       status.code = case code
-                     when "Ok"    then OpenTelemetry::API::AbstractStatus::StatusCode::Ok
-                     when "Error" then OpenTelemetry::API::AbstractStatus::StatusCode::Error
-                     else              OpenTelemetry::API::AbstractStatus::StatusCode::Unset
-                     end
+                    when "Ok"    then OpenTelemetry::API::AbstractStatus::StatusCode::Ok
+                    when "Error" then OpenTelemetry::API::AbstractStatus::StatusCode::Error
+                    else              OpenTelemetry::API::AbstractStatus::StatusCode::Unset
+                    end
       status
     end
 
@@ -45,7 +45,19 @@ module Tracing
     end
 
     def on_event(event : Core::Event, ctx : LayerContext) : Nil
-      # Add event to active OTel span
+    end
+
+    # Returns true if this event should be recorded as an OTel exception.
+    def error_event?(meta : Metadata) : Bool
+      meta.level == Level::ERROR
+    end
+
+    # Build a Hash of exception attributes from message and stacktrace.
+    def exception_attributes(message : String, stacktrace : String) : Hash(String, String)
+      {
+        "exception.message"    => message,
+        "exception.stacktrace" => stacktrace,
+      }
     end
   end
 

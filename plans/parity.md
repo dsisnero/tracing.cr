@@ -177,7 +177,7 @@ distributed tracing systems.
 
 ### Error Handling
 
-- [ ] `with_error_events_to_exceptions` — convert error events to OTel exceptions
+- [x] `with_error_events_to_exceptions` — error event detection + attrs — convert error events to OTel exceptions
 - [ ] `with_error_events_to_status` — set span status from error events
 - [ ] `with_error_fields_to_exceptions` — convert error fields to exceptions
 - [ ] `with_error_records_to_exceptions` — convert span error records to exceptions
