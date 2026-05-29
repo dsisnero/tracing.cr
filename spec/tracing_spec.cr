@@ -1453,3 +1453,31 @@ describe "SpanTrace (ported from tracing-error/src/lib.rs)" do
     end
   end
 end
+
+# RED tests — tracing-flame FlameLayer
+describe "FlameLayer (ported from tracing-flame/src/lib.rs)" do
+  it "writes folded stack format for span enter/exit" do
+    io = IO::Memory.new
+    flame = Tracing::FlameLayer.new(io)
+    registry = Tracing::Registry.new.with(flame)
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      info_span!("outer").in_scope do
+        info_span!("inner").in_scope do
+        end
+      end
+    end
+
+    output = io.to_s
+    output.should contain("outer")
+    output.should contain("inner")
+    output.should contain(";")
+  end
+
+  it "creates with_file helper" do
+    flame, guard = Tracing::FlameLayer.with_file("tmp/flame_test.folded")
+    flame.should be_a(Tracing::FlameLayer)
+    guard.close
+    File.delete("tmp/flame_test.folded") if File.exists?("tmp/flame_test.folded")
+  end
+end
