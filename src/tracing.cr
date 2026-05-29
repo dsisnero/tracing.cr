@@ -23,6 +23,10 @@ require "./tracing/subscriber_conv"
 module Tracing
   VERSION = "0.1.0"
 
+  def self.fmt_layer : FmtLayer
+    FmtLayer.new
+  end
+
   alias Level = Core::Level
   alias LevelFilter = Core::LevelFilter
   alias ParseLevelError = Core::ParseLevelError

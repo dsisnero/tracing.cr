@@ -93,5 +93,9 @@ module Tracing
     def max_level_hint : LevelFilter?
       @max_level
     end
+
+    def self.default : self
+      new
+    end
   end
 end

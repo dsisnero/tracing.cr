@@ -1059,3 +1059,22 @@ private class EventLog < Tracing::Layer
     @targets << attrs.metadata.target
   end
 end
+
+# RED tests — Registry.default, fmt::layer()
+describe "convenience constructors" do
+  it "Registry.default creates a default Registry" do
+    registry = Tracing::Registry.default
+    registry.should be_a(Tracing::Registry)
+  end
+
+  it "Registry.default.with chains layers" do
+    layer = Tracing::FmtLayer.new(IO::Memory.new)
+    subscriber = Tracing::Registry.default.with(layer)
+    subscriber.should be_a(Tracing::Layered(Tracing::Registry))
+  end
+
+  it "fmt layer free function creates default FmtLayer" do
+    layer = Tracing.fmt_layer
+    layer.should be_a(Tracing::FmtLayer)
+  end
+end
