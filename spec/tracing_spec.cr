@@ -998,3 +998,37 @@ describe "Targets filter (ported from upstream filter/targets.rs)" do
     targets.default_level.into_level.should be_nil
   end
 end
+
+# RED tests — MakeWriter (block-based writer)
+describe "FmtLayer MakeWriter (ported from upstream fmt/writer.rs)" do
+  it "accepts a block that returns IO" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.make_writer { io }
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("writer_test")
+    end
+
+    io.to_s.should contain("writer_test")
+  end
+
+  it "creates a new writer for each event" do
+    outputs = [] of IO::Memory
+    layer = Tracing::FmtLayer.make_writer do
+      io = IO::Memory.new
+      outputs << io
+      io
+    end
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("first")
+      info!("second")
+    end
+
+    outputs.size.should eq(2)
+    outputs[0].to_s.should contain("first")
+    outputs[1].to_s.should contain("second")
+  end
+end

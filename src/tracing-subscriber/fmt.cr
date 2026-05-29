@@ -22,12 +22,16 @@ module Tracing
     @show_level : Bool
     @compact_mode : Bool
     @span_events : FmtSpan
+    @make_writer : (-> IO)?
 
-    def initialize(@io : IO = STDOUT, @filter : LevelFilterLayer? = nil)
+    def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
+      @io = io
+      @filter = filter
       @show_target = false
       @show_level = true
       @compact_mode = false
       @span_events = FmtSpan::FULL
+      @make_writer = nil
     end
 
     def compact : self
@@ -38,6 +42,24 @@ module Tracing
     def with_span_events(events : FmtSpan) : self
       @span_events = events
       self
+    end
+
+    def self.make_writer(&writer : -> IO) : self
+      layer = new
+      layer.writer_block = writer
+      layer
+    end
+
+    def writer_block=(writer : (-> IO)?) : Nil
+      @make_writer = writer
+    end
+
+    private def resolve_io : IO
+      if writer = @make_writer
+        writer.call
+      else
+        @io
+      end
     end
 
     def with_filter(filter : LevelFilter) : self
@@ -68,37 +90,39 @@ module Tracing
     end
 
     def on_event(event : Core::Event, ctx : LayerContext) : Nil
+      io = resolve_io
       span_name = ctx.event_span(event).try(&.name) || ""
       span_info = span_name.empty? ? "" : " #{span_name}:"
 
       unless @compact_mode
-        @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+        io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
       end
       if @show_level
-        @io << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << " "
+        io << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << " "
       end
       if @show_target
-        @io << event.metadata.target << " "
+        io << event.metadata.target << " "
       end
-      @io << span_info << event.metadata.name
+      io << span_info << event.metadata.name
 
       vs = event.values
       if !vs.empty?
         collector = FieldCollector.new
         vs.visit(collector)
         if collector.fields
-          @io << "{" << collector.fields << "}"
+          io << "{" << collector.fields << "}"
         end
       end
 
-      @io << "\n"
+      io << "\n"
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
       return unless @span_events.new?
-      @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
-      @io << attrs.metadata.level.as_str.rjust(5) << " "
-      @io << "new " << attrs.metadata.name << "\n"
+      io = resolve_io
+      io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+      io << attrs.metadata.level.as_str.rjust(5) << " "
+      io << "new " << attrs.metadata.name << "\n"
     end
 
     def on_enter(id : Core::Span::Id, ctx : LayerContext) : Nil
@@ -106,9 +130,10 @@ module Tracing
       return unless @span_events.enter?
       span = ctx.span(id)
       if span
-        @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
-        @io << span.metadata.level.as_str.rjust(5) << " "
-        @io << "enter " << span.name << "\n"
+        io = resolve_io
+        io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+        io << span.metadata.level.as_str.rjust(5) << " "
+        io << "enter " << span.name << "\n"
       end
     end
 
@@ -117,9 +142,10 @@ module Tracing
       return unless @span_events.exit?
       span = ctx.span(id)
       if span
-        @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
-        @io << span.metadata.level.as_str.rjust(5) << " "
-        @io << "exit " << span.name << "\n"
+        io = resolve_io
+        io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+        io << span.metadata.level.as_str.rjust(5) << " "
+        io << "exit " << span.name << "\n"
       end
     end
   end
