@@ -5,12 +5,26 @@ module Tracing
   class FmtLayer < Layer
     @io : IO
     @filter : LevelFilterLayer?
+    @show_target : Bool
+    @show_level : Bool
 
     def initialize(@io : IO = STDOUT, @filter : LevelFilterLayer? = nil)
+      @show_target = false
+      @show_level = true
     end
 
     def with_filter(filter : LevelFilter) : self
       @filter = LevelFilterLayer.new(filter)
+      self
+    end
+
+    def with_target(show : Bool) : self
+      @show_target = show
+      self
+    end
+
+    def with_level(show : Bool) : self
+      @show_level = show
       self
     end
 
@@ -31,10 +45,14 @@ module Tracing
       span_info = span_name.empty? ? "" : " #{span_name}:"
 
       @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
-      @io << event.metadata.level.as_str.rjust(5) << " "
+      if @show_level
+        @io << event.metadata.level.as_str.rjust(5) << " "
+      end
+      if @show_target
+        @io << event.metadata.target << " "
+      end
       @io << span_info << event.metadata.name
 
-      # Record fields in key=value format
       vs = event.values
       if !vs.empty?
         collector = FieldCollector.new
@@ -72,7 +90,6 @@ module Tracing
     end
   end
 
-  # Collects field key=value pairs for display.
   private class FieldCollector
     include Core::Field::Visit
     property fields : String?

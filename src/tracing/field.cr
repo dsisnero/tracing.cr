@@ -131,7 +131,7 @@ module Tracing
         @bool_val : Bool = false
         @str_val : String = ""
         @error_val : Exception?
-        @debug_val : NoReturn?
+        @debug_val : String?
 
         def self.i64(field : Field, value : Int64) : self
           v = new(field, :i64)
@@ -203,7 +203,7 @@ module Tracing
         end
 
         protected def set_debug(value)
-          @debug_val = value
+          @debug_val = value.to_s
         end
 
         def record(visitor : Visit) : Nil
@@ -214,7 +214,7 @@ module Tracing
           when :bool  then visitor.record_bool(@field, @bool_val)
           when :str   then visitor.record_str(@field, @str_val)
           when :error then visitor.record_error(@field, @error_val.not_nil!)
-          when :debug then visitor.record_debug(@field, @debug_val)
+          when :debug then visitor.record_str(@field, @debug_val || "nil")
           end
         end
 
@@ -226,7 +226,7 @@ module Tracing
           when :bool  then io << @bool_val
           when :str   then io << @str_val
           when :error then io << @error_val
-          when :debug then io << @debug_val
+          when :debug then io << (@debug_val || "nil")
           end
         end
       end

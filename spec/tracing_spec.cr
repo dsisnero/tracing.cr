@@ -774,3 +774,46 @@ private class EventCollector < Tracing::Layer
     @names << event.metadata.name
   end
 end
+
+# RED tests — FmtLayer with_target, field formatting
+describe "FmtLayer formatting options" do
+  it "shows target when with_target is enabled" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_target(true)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.event(Level::INFO, "test_event")
+    end
+
+    output = io.to_s
+    output.should contain("test_event") # target=name when not overridden
+  end
+
+  it "hides level when with_level is false" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_level(false)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.event(Level::INFO, "test_event")
+    end
+
+    output = io.to_s
+    output.should_not contain("INFO")
+  end
+
+  it "formats event fields" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      Tracing.event(Level::INFO, "data_event", user: "alice", count: 42)
+    end
+
+    output = io.to_s
+    output.should contain("user=alice")
+    output.should contain("count=42")
+  end
+end
