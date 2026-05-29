@@ -5,9 +5,29 @@ module Tracing
   #
   # Ported from upstream `tracing_opentelemetry::OpenTelemetryLayer`.
   class OpenTelemetryLayer < Layer
-    getter tracer
+    @level : LevelFilter
 
-    def initialize(@tracer = nil)
+    def initialize
+      @level = LevelFilter.trace
+    end
+
+    def with_level(level : Level) : self
+      @level = LevelFilter.from_level(level)
+      self
+    end
+
+    def enabled?(meta : Metadata, ctx : LayerContext) : Bool
+      meta.level <= @level
+    end
+
+    def max_level_hint : LevelFilter?
+      @level
+    end
+
+    def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
+      return unless span_ref = ctx.span(id)
+      return unless exts = span_ref.extensions_mut
+      exts.insert(OtelSpanData.new(attrs.metadata.name))
     end
 
     def self.kind_from_field(name : String?) : OpenTelemetry::API::Span::Kind
@@ -32,13 +52,9 @@ module Tracing
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
-      otel_span = @tracer.try(&.start_span(attrs.metadata.name))
       return unless span_ref = ctx.span(id)
       return unless exts = span_ref.extensions_mut
-
-      data = OtelSpanData.new(attrs.metadata.name)
-      data.otel_span = otel_span
-      exts.insert(data)
+      exts.insert(OtelSpanData.new(attrs.metadata.name))
     end
 
     def on_enter(id : Core::Span::Id, ctx : LayerContext) : Nil
@@ -64,7 +80,6 @@ module Tracing
 
   struct OtelSpanData
     getter name : String
-    property otel_span
 
     def initialize(@name : String)
     end

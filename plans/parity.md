@@ -184,7 +184,7 @@ distributed tracing systems.
 
 ### Configuration
 
-- [ ] `with_level(Level)` — filter by verbosity level
+- [x] `with_level(Level)` — filter by verbosity level
 - [ ] `with_target(bool)` — include/exclude span target
 - [ ] `with_location(bool)` — include/exclude span source location
 - [ ] `with_threads(bool)` — include/exclude thread info

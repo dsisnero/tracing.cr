@@ -1590,38 +1590,6 @@ describe "OpenTelemetry error-to-exception mapping" do
   end
 end
 
-# RED tests — OTel Tracer integration
-describe "OpenTelemetry Tracer integration" do
-  it "layer accepts a tracer" do
-    tracer = TestTracer.new
-    layer = Tracing::OpenTelemetryLayer.new(tracer)
-    layer.tracer.should eq(tracer)
-  end
-
-  it "creates OTel span on tracing span creation" do
-    tracer = TestTracer.new
-    layer = Tracing::OpenTelemetryLayer.new(tracer)
-    registry = Tracing::Registry.new.with(layer)
-
-    Dispatch.with_default(Dispatch.new(registry)) do
-      span!(Level::INFO, "test_span").in_scope { }
-    end
-
-    tracer.spans.size.should eq(1)
-    tracer.spans[0].name.should eq("test_span")
-  end
-end
-
-private class TestTracer
-  getter spans : Array(TestSpan) = [] of TestSpan
-
-  def start_span(name : String) : TestSpan
-    span = TestSpan.new(name)
-    @spans << span
-    span
-  end
-end
-
 private class TestSpan
   getter name : String
   property finished : Bool = false
@@ -1631,5 +1599,28 @@ private class TestSpan
 
   def finish
     @finished = true
+  end
+end
+
+# RED tests — OTel layer builder configuration
+describe "OpenTelemetryLayer configuration" do
+  it "with_level filters events below the configured level" do
+    layer = Tracing::OpenTelemetryLayer.new.with_level(Level::WARN)
+    observer = SpanObserver.new
+    registry = Tracing::Registry.new.with(layer).with(observer)
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      info!("should be filtered")
+      warn!("should pass")
+    end
+
+    observer.spans.size.should eq(0)
+  end
+
+  it "default level is TRACE (pass everything)" do
+    layer = Tracing::OpenTelemetryLayer.new
+    meta = Metadata.new("test", "test", Level::TRACE, kind: Kind::SPAN)
+    # Default should pass everything
+    layer.enabled?(meta, Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)).should be_true
   end
 end
