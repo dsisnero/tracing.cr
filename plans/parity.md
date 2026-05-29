@@ -185,9 +185,9 @@ distributed tracing systems.
 ### Configuration
 
 - [x] `with_level(Level)` — filter by verbosity level
-- [ ] `with_target(bool)` — include/exclude span target
-- [ ] `with_location(bool)` — include/exclude span source location
-- [ ] `with_threads(bool)` — include/exclude thread info
+- [x] `with_target(bool)` — include/exclude span target
+- [x] `with_location(bool)` — include/exclude span source location
+- [x] `with_threads(bool)` — include/exclude thread info
 - [ ] `with_tracked_inactivity(bool)` — track span inactivity duration
 - [ ] `with_context_activation(bool)` — activate OTel context on span enter
 

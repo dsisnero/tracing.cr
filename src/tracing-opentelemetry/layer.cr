@@ -9,6 +9,9 @@ module Tracing
 
     def initialize
       @level = LevelFilter.trace
+      @show_target = true
+      @show_location = false
+      @show_threads = false
     end
 
     def with_level(level : Level) : self
@@ -84,4 +87,19 @@ module Tracing
     def initialize(@name : String)
     end
   end
+end
+
+def with_target(show : Bool) : self
+  @show_target = show
+  self
+end
+
+def with_location(show : Bool) : self
+  @show_location = show
+  self
+end
+
+def with_threads(show : Bool) : self
+  @show_threads = show
+  self
 end
