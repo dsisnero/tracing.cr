@@ -1205,3 +1205,30 @@ describe "Registry#init" do
     end
   end
 end
+
+# RED tests — Layer#and_then
+describe "Layer#and_then combinator" do
+  it "composes two layers with the second as filter" do
+    inner = EventCollector.new
+    filter = Tracing::LevelFilterLayer.new(LevelFilter.warn)
+    composed = inner.and_then(filter)
+    subscriber = Tracing::Registry.new.with(composed)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("pass")
+      info!("block")
+    end
+
+    inner.names.should contain("pass")
+    inner.names.should_not contain("block")
+  end
+
+  it "chains with Registry.with" do
+    layer = Tracing::FmtLayer.new(IO::Memory.new)
+    filter = Tracing::LevelFilterLayer.new(LevelFilter.error)
+    composed = layer.and_then(filter)
+    subscriber = Tracing::Registry.new.with(composed)
+
+    subscriber.should be_a(Tracing::Layered(Tracing::Registry))
+  end
+end

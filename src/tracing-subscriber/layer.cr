@@ -41,6 +41,52 @@ module Tracing
     def max_level_hint : LevelFilter?
       nil
     end
+
+    # Compose this layer with another, where `other` acts as a filter.
+    def and_then(other : Layer) : Filtered
+      Filtered.new(self, other)
+    end
+  end
+
+  # A layer combinator that applies a filter layer to an inner layer.
+  class Filtered < Layer
+    @inner : Layer
+    @filter : Layer
+
+    def initialize(@inner : Layer, @filter : Layer)
+    end
+
+    def on_event(event : Core::Event, ctx : LayerContext) : Nil
+      @inner.on_event(event, ctx)
+    end
+
+    def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
+      @inner.on_new_span(attrs, id, ctx)
+    end
+
+    def on_enter(id : Core::Span::Id, ctx : LayerContext) : Nil
+      @inner.on_enter(id, ctx)
+    end
+
+    def on_exit(id : Core::Span::Id, ctx : LayerContext) : Nil
+      @inner.on_exit(id, ctx)
+    end
+
+    def on_record(id : Core::Span::Id, values : Core::Span::Record, ctx : LayerContext) : Nil
+      @inner.on_record(id, values, ctx)
+    end
+
+    def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
+      @filter.enabled?(metadata, ctx)
+    end
+
+    def on_register_callsite(metadata : Metadata, ctx : LayerContext) : Callsite::Interest
+      @filter.on_register_callsite(metadata, ctx)
+    end
+
+    def max_level_hint : LevelFilter?
+      @filter.max_level_hint
+    end
   end
 
   # Context passed to Layer methods, providing access to the subscriber.
