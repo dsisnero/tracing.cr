@@ -4,8 +4,8 @@ module Tracing
   # Usage:
   #   span = Tracing.span(Level::INFO, "my_span", answer: 42)
   #   span.in_scope { do_work }
-  def self.span(level : Level, name : String, **fields) : Span
-    meta = Metadata.new(name, name, level, kind: Kind::SPAN)
+  def self.span(level : Level, name : String, *, target : String? = nil, **fields) : Span
+    meta = Metadata.new(name, target || name, level, kind: Kind::SPAN)
     values = build_field_valueset(fields)
     s = Span.new(meta, values)
     s
@@ -22,8 +22,8 @@ module Tracing
   #
   # Usage:
   #   Tracing.event(Level::INFO, "my_event", key: "value")
-  def self.event(level : Level, name : String, **fields) : Nil
-    meta = Metadata.new(name, name, level, kind: Kind::EVENT)
+  def self.event(level : Level, name : String, *, target : String? = nil, **fields) : Nil
+    meta = Metadata.new(name, target || name, level, kind: Kind::EVENT)
     dispatch = Dispatch.current
     return unless dispatch
     return unless dispatch.enabled(meta)

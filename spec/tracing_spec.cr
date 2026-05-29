@@ -1032,3 +1032,30 @@ describe "FmtLayer MakeWriter (ported from upstream fmt/writer.rs)" do
     outputs[1].to_s.should contain("second")
   end
 end
+
+# RED tests — target override
+describe "event/span target override" do
+  it "Tracing.event accepts target: param" do
+    log = EventLog.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      span!(Level::INFO, "my_span", target: "span_target")
+      info!("my_event", target: "custom_target")
+    end
+
+    log.targets[0].should eq("span_target")
+  end
+end
+
+private class EventLog < Tracing::Layer
+  property targets : Array(String) = [] of String
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
+    @targets << event.metadata.target
+  end
+
+  def on_new_span(attrs : Tracing::Core::Span::Attributes, id : Tracing::CoreSpan::Id, ctx : Tracing::LayerContext)
+    @targets << attrs.metadata.target
+  end
+end
