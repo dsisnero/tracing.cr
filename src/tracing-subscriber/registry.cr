@@ -39,6 +39,12 @@ module Tracing
       @current_span_ids[Fiber.current.object_id]?.try(&.last?)
     end
 
+    # Get the full current span stack for the current fiber (innermost first).
+    def current_span_stack : Array(Core::Span::Id)
+      stack = @mutex.synchronize { @current_span_ids[Fiber.current.object_id]?.dup }
+      stack || [] of Core::Span::Id
+    end
+
     # ---- Subscriber implementation ----
 
     def enter(id : Core::Span::Id) : Nil

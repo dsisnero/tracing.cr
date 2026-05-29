@@ -1424,3 +1424,32 @@ describe "RollingFileAppender" do
     Dir["tmp/logs/write_test*"].each { |file| File.delete(file) }
   end
 end
+
+# RED tests — tracing-error SpanTrace
+describe "SpanTrace (ported from tracing-error/src/lib.rs)" do
+  it "captures current span context" do
+    registry = Tracing::Registry.new
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "parent").in_scope do
+        span!(Level::INFO, "child").in_scope do
+          trace = Tracing::SpanTrace.capture(registry)
+          trace.spans.size.should eq(2)
+          trace.spans[0].should eq("child")
+          trace.spans[1].should eq("parent")
+        end
+      end
+    end
+  end
+
+  it "formats span chain for display" do
+    registry = Tracing::Registry.new
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "root_span").in_scope do
+        trace = Tracing::SpanTrace.capture(registry)
+        trace.to_s.should contain("root_span")
+      end
+    end
+  end
+end
