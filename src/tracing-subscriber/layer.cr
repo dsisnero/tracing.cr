@@ -141,5 +141,30 @@ module Tracing
     def with(layer : Layer) : Layered(Registry)
       Layered.new(self, layer)
     end
+
+    def with(layer : Nil) : Layered(Registry)
+      Layered.new(self, NoOpLayer.new)
+    end
+  end
+
+  class Layered(S)
+    def with(layer : Layer) : Layered(Layered(S))
+      Layered.new(self, layer)
+    end
+
+    def with(layer : Nil) : Layered(Layered(S))
+      Layered.new(self, NoOpLayer.new)
+    end
+  end
+
+  # A no-op layer that passes everything through.
+  class NoOpLayer < Layer
+    def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
+      true
+    end
+
+    def max_level_hint : LevelFilter?
+      nil
+    end
   end
 end

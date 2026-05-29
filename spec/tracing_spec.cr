@@ -1078,3 +1078,34 @@ describe "convenience constructors" do
     layer.should be_a(Tracing::FmtLayer)
   end
 end
+
+# RED tests — Nil as no-op Layer
+describe "Nil as Layer (Option<Layer> support)" do
+  it "nil can be used with .with as a no-op layer" do
+    registry = Tracing::Registry.default.with(nil)
+    collector = EventCollector.new
+    subscriber = registry.with(collector)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("should pass through nil layer")
+    end
+
+    collector.names.should contain("should pass through nil layer")
+  end
+
+  it "conditional layers work at runtime" do
+    collector = EventCollector.new
+    debug = true
+    filter_layer = debug ? Tracing::LevelFilterLayer.new(LevelFilter.warn) : nil
+    registry = Tracing::Registry.default.with(collector).with(filter_layer)
+    subscriber = registry
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      warn!("passes")
+      info!("blocked")
+    end
+
+    collector.names.should contain("passes")
+    collector.names.should_not contain("blocked")
+  end
+end
