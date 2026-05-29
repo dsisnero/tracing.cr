@@ -132,10 +132,6 @@ module Tracing
       @span
     end
 
-    def finalize
-      @span.exit_span unless @exited
-    end
-
     # Explicitly exit the span, returning it.
     def exit : Span
       @span.exit_span

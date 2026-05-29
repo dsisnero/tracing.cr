@@ -4,8 +4,26 @@ module Tracing
   # Ported from upstream `tracing_subscriber::fmt`.
   class FmtLayer < Layer
     @io : IO
+    @filter : LevelFilterLayer?
 
-    def initialize(@io : IO = STDOUT)
+    def initialize(@io : IO = STDOUT, @filter : LevelFilterLayer? = nil)
+    end
+
+    def with_filter(filter : LevelFilter) : self
+      @filter = LevelFilterLayer.new(filter)
+      self
+    end
+
+    def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
+      if f = @filter
+        f.enabled?(metadata, ctx)
+      else
+        true
+      end
+    end
+
+    def max_level_hint : LevelFilter?
+      @filter.try(&.max_level_hint)
     end
 
     def on_event(event : Core::Event, ctx : LayerContext) : Nil

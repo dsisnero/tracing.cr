@@ -84,35 +84,47 @@ module Tracing
 
     def enter(id : Core::Span::Id) : Nil
       @inner.enter(id)
-      @layer.on_enter(id, LayerContext.new(@inner))
+      ctx = LayerContext.new(@inner)
+      if @layer.enabled?(Metadata.new("", "", Level::TRACE), ctx)
+        @layer.on_enter(id, ctx)
+      end
     end
 
     def exit(id : Core::Span::Id) : Nil
       @inner.exit(id)
-      @layer.on_exit(id, LayerContext.new(@inner))
+      ctx = LayerContext.new(@inner)
+      if @layer.enabled?(Metadata.new("", "", Level::TRACE), ctx)
+        @layer.on_exit(id, ctx)
+      end
     end
 
     def event(event : Core::Event) : Nil
+      @inner.event(event)
       ctx = LayerContext.new(@inner)
       if @layer.enabled?(event.metadata, ctx)
-        @inner.event(event)
         @layer.on_event(event, ctx)
       end
     end
 
     def record(id : Core::Span::Id, values : Core::Span::Record) : Nil
       @inner.record(id, values)
-      @layer.on_record(id, values, LayerContext.new(@inner))
+      ctx = LayerContext.new(@inner)
+      if @layer.enabled?(Metadata.new("", "", Level::TRACE), ctx)
+        @layer.on_record(id, values, ctx)
+      end
     end
 
     def record_follows_from(span : Core::Span::Id, follows : Core::Span::Id) : Nil
       @inner.record_follows_from(span, follows)
-      @layer.on_record_follows_from(span, follows, LayerContext.new(@inner))
+      ctx = LayerContext.new(@inner)
+      if @layer.enabled?(Metadata.new("", "", Level::TRACE), ctx)
+        @layer.on_record_follows_from(span, follows, ctx)
+      end
     end
 
     def enabled(metadata : Metadata) : Bool
       ctx = LayerContext.new(@inner)
-      @inner.enabled(metadata) && @layer.enabled?(metadata, ctx)
+      @inner.enabled(metadata) || @layer.enabled?(metadata, ctx)
     end
 
     def register_callsite(metadata : Metadata) : Callsite::Interest

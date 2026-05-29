@@ -554,18 +554,18 @@ end
 # RED tests — Filter (LevelFilter as Layer)
 describe "Filter::LevelFilter (ported from upstream filter/level.rs)" do
   it "filters out events above the configured level" do
-    filter_layer = Tracing::LevelFilterLayer.new(LevelFilter.info)
-    counting_layer = EventCountingLayer.new
-    registry = Tracing::Registry.new
-    # Filter must be OUTERMOST to block events from reaching counting layer
-    subscriber = registry.with(counting_layer).with(filter_layer)
+    io = IO::Memory.new
+    fmt_layer = Tracing::FmtLayer.new(io).with_filter(LevelFilter.info)
+    subscriber = Tracing::Registry.new.with(fmt_layer)
 
     Dispatch.with_default(Dispatch.new(subscriber)) do
       info!("should pass")
       debug!("should be filtered")
     end
 
-    counting_layer.count.should eq(1)
+    output = io.to_s
+    output.should contain("should pass")
+    output.should_not contain("should be filtered")
   end
 
   it "reports max_level_hint" do
@@ -579,14 +579,6 @@ describe "Filter::LevelFilter (ported from upstream filter/level.rs)" do
     interest = layer.on_register_callsite(meta, Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new))
     interest.never?.should be_false
     interest.always?.should be_true
-  end
-end
-
-private class EventCountingLayer < Tracing::Layer
-  property count : Int32 = 0
-
-  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext)
-    @count += 1
   end
 end
 
@@ -659,5 +651,25 @@ describe "FmtLayer (ported from upstream fmt/fmt_layer.rs)" do
     output.should contain("enter")
     output.should contain("inside")
     output.should contain("exit")
+  end
+end
+
+# RED tests — fmt with_filter
+describe "FmtLayer with_filter" do
+  it "filters events based on layer-level filter" do
+    io = IO::Memory.new
+    fmt_layer = Tracing::FmtLayer.new(io).with_filter(LevelFilter.warn)
+    subscriber = Tracing::Registry.new.with(fmt_layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("should be filtered out")
+      warn!("should appear")
+      error!("should also appear")
+    end
+
+    output = io.to_s
+    output.should_not contain("should be filtered out")
+    output.should contain("should appear")
+    output.should contain("should also appear")
   end
 end
