@@ -15,7 +15,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-flame | 0.1.0 | ✓ Complete | — |
 | tracing-attributes | 0.1.0 | ✓ Complete | — |
 | tracing-serde | 0.1.0 | Not started | — |
-| tracing-opentelemetry | 0.33.0 | Not started | `plans/inventory/tracing_opentelemetry_port_inventory.tsv` (69 items) |
+| tracing-opentelemetry | 0.33.0 | In progress | `plans/inventory/tracing_opentelemetry_port_inventory.tsv` (69 items) |
 
 ## tracing-core ✓
 
@@ -152,7 +152,7 @@ distributed tracing systems.
 
 ### Core API
 
-- [ ] `OpenTelemetryLayer` — tracing Layer that converts spans/events to OTel
+- [x] `OpenTelemetryLayer` — minimal port that converts spans/events to OTel
 - [ ] `layer()` free function — creates default OpenTelemetryLayer
 - [ ] `.with_tracer(tracer)` — configure OTel tracer
 - [ ] `PreSampledTracer` — pre-sampled tracer wrapper

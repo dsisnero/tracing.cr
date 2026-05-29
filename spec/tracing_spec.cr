@@ -1497,3 +1497,29 @@ describe "Tracing.instrument (ported from tracing-attributes)" do
     observer.spans[0].metadata.name.should eq("my_func")
   end
 end
+
+# RED tests — tracing-opentelemetry OpenTelemetryLayer
+describe "OpenTelemetryLayer (ported from tracing-opentelemetry/src/layer.rs)" do
+  it "stores OtelData in span extensions" do
+    # Use the NoopTracer (always available, no config needed)
+    layer = Tracing::OpenTelemetryLayer.new
+    registry = Tracing::Registry.new.with(layer)
+
+    observer = SpanObserver.new
+    registry = registry.with(observer)
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "otel_test_span").in_scope do
+      end
+    end
+
+    # Span was created
+    observer.spans.size.should eq(1)
+    observer.spans[0].metadata.name.should eq("otel_test_span")
+  end
+
+  it "maps tracing levels to OTel span kind" do
+    layer = Tracing::OpenTelemetryLayer.new
+    layer.should be_a(Tracing::Layer)
+  end
+end

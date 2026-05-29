@@ -25,6 +25,7 @@ require "./tracing-subscriber/span_trace"
 require "./tracing-subscriber/flame"
 require "./tracing/subscriber_conv"
 require "./tracing/instrument_annotation"
+require "./tracing-opentelemetry/layer"
 
 module Tracing
   VERSION = "0.1.0"
