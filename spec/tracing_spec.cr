@@ -1259,3 +1259,14 @@ private class SpanRecordLog < Tracing::Layer
     @recorded_fields << "record"
   end
 end
+
+# RED tests — LevelFilter.current (global max level optimization)
+describe "LevelFilter.current" do
+  it "reflects the globally set max level" do
+    LevelFilter.max = LevelFilter.warn
+    LevelFilter.current.into_level.should eq(Level::WARN)
+
+    LevelFilter.max = LevelFilter.trace
+    LevelFilter.current.into_level.should eq(Level::TRACE)
+  end
+end
