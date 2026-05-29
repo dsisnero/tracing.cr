@@ -43,6 +43,8 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] FmtLayer.with_filter (per-layer level filter)
 - [x] Directive parsing (EnvFilter directive: `target[span]=level`)
 - [x] EnvFilter layer (parses env var, applies directives as subscriber filter)
+- [x] FmtLayer.with_target / .with_level (builder options)
+- [x] FmtLayer.compact mode (single-line, no timestamps, skip lifecycle)
 
 ## Quality Gates
 

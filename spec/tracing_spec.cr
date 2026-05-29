@@ -817,3 +817,90 @@ describe "FmtLayer formatting options" do
     output.should contain("count=42")
   end
 end
+
+# RED tests — FmtLayer compact mode
+describe "FmtLayer compact mode" do
+  it "outputs compact single-line events without timestamps" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).compact
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("compact_event", key: "val")
+    end
+
+    output = io.to_s
+    output.should contain("INFO compact_event")
+    output.should contain("key=val")
+    # Compact mode: no timestamp (no ISO 8601 date)
+    output.should_not match(/\d{4}-\d{2}-\d{2}T/)
+    # Single line
+    output.lines.size.should eq(1)
+  end
+
+  it "omits span enter/exit in compact mode" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).compact
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("compact_span").in_scope do
+        info!("inside")
+      end
+    end
+
+    output = io.to_s
+    output.should_not contain("enter")
+    output.should_not contain("exit")
+    output.should contain("inside")
+  end
+end
+
+# RED tests — FmtSpan configuration
+describe "FmtLayer span events configuration" do
+  it "shows only new_span events when configured" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_span_events(Tracing::FmtSpan::NEW)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("span_test").in_scope { info!("inside") }
+    end
+
+    output = io.to_s
+    output.should contain("new span_test")
+    output.should_not contain("enter")
+    output.should_not contain("exit")
+    output.should contain("inside")
+  end
+
+  it "shows no span events when NONE" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("span_test").in_scope { info!("inside") }
+    end
+
+    output = io.to_s
+    output.should_not contain("new")
+    output.should_not contain("enter")
+    output.should_not contain("exit")
+  end
+
+  it "shows enter and exit when ACTIVE" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).with_span_events(Tracing::FmtSpan::ACTIVE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info_span!("span_test").in_scope { info!("inside") }
+    end
+
+    output = io.to_s
+    output.should contain("enter span_test")
+    output.should contain("exit span_test")
+    output.should_not contain("new")
+  end
+end

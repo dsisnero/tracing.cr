@@ -1,4 +1,17 @@
 module Tracing
+  # Controls which span lifecycle events the FmtLayer displays.
+  # Ported from upstream `tracing_subscriber::fmt::format::FmtSpan`.
+  @[Flags]
+  enum FmtSpan : UInt8
+    NONE   =       0
+    NEW    =       1
+    ENTER  =       2
+    EXIT   =       4
+    CLOSE  =       8
+    ACTIVE =    6_u8 # ENTER | EXIT
+    FULL   = 0xFF_u8
+  end
+
   # A Layer that formats spans and events to an `IO` writer.
   #
   # Ported from upstream `tracing_subscriber::fmt`.
@@ -7,10 +20,24 @@ module Tracing
     @filter : LevelFilterLayer?
     @show_target : Bool
     @show_level : Bool
+    @compact_mode : Bool
+    @span_events : FmtSpan
 
     def initialize(@io : IO = STDOUT, @filter : LevelFilterLayer? = nil)
       @show_target = false
       @show_level = true
+      @compact_mode = false
+      @span_events = FmtSpan::FULL
+    end
+
+    def compact : self
+      @compact_mode = true
+      self
+    end
+
+    def with_span_events(events : FmtSpan) : self
+      @span_events = events
+      self
     end
 
     def with_filter(filter : LevelFilter) : self
@@ -44,9 +71,11 @@ module Tracing
       span_name = ctx.event_span(event).try(&.name) || ""
       span_info = span_name.empty? ? "" : " #{span_name}:"
 
-      @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+      unless @compact_mode
+        @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+      end
       if @show_level
-        @io << event.metadata.level.as_str.rjust(5) << " "
+        @io << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << " "
       end
       if @show_target
         @io << event.metadata.target << " "
@@ -66,12 +95,15 @@ module Tracing
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
+      return unless @span_events.new?
       @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
       @io << attrs.metadata.level.as_str.rjust(5) << " "
       @io << "new " << attrs.metadata.name << "\n"
     end
 
     def on_enter(id : Core::Span::Id, ctx : LayerContext) : Nil
+      return if @compact_mode
+      return unless @span_events.enter?
       span = ctx.span(id)
       if span
         @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
@@ -81,6 +113,8 @@ module Tracing
     end
 
     def on_exit(id : Core::Span::Id, ctx : LayerContext) : Nil
+      return if @compact_mode
+      return unless @span_events.exit?
       span = ctx.span(id)
       if span
         @io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
