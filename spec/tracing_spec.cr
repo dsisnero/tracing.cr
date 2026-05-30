@@ -1774,3 +1774,51 @@ describe "Targets.from_env" do
     filter.enabled?(meta, ctx).should be_true
   end
 end
+
+# RED tests — typed JSON values
+describe "FmtLayer JSON typed values" do
+  it "serializes integers as JSON numbers" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("int_event", count: 42_i64, size: 100_u64)
+    end
+
+    output = io.to_s.strip
+    parsed = JSON.parse(output)
+    # Integers should appear as JSON numbers
+    output.should contain("42")
+    output.should_not contain("\"42\"")
+    parsed["count"].as_i64.should eq(42)
+  end
+
+  it "serializes booleans as JSON bool" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("bool_event", active: true, done: false)
+    end
+
+    output = io.to_s.strip
+    output.should contain("true")
+    output.should_not contain("\"true\"")
+  end
+
+  it "serializes floats as JSON numbers" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("float_event", ratio: 0.5_f64)
+    end
+
+    output = io.to_s.strip
+    output.should contain("0.5")
+    output.should_not contain("\"0.5\"")
+  end
+end

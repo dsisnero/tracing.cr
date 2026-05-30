@@ -1,3 +1,5 @@
+require "json"
+
 module Tracing
   # Controls which span lifecycle events the FmtLayer displays.
   # Ported from upstream `tracing_subscriber::fmt::format::FmtSpan`.
@@ -91,13 +93,14 @@ module Tracing
 
           vs = event.values
           if !vs.empty?
-            collector = FieldCollector.new
+            collector = JsonFieldCollector.new
             vs.visit(collector)
-            if fields_str = collector.fields
-              fields_str.split(" ").each do |pair|
-                key, val = pair.split("=", 2)
-                next unless key && val
-                json.field key, val
+            collector.entries.each do |key, any_val|
+              case v = any_val.raw
+              when Int64   then json.field key, v
+              when Float64 then json.field key, v
+              when Bool    then json.field key, v
+              else              json.field key, any_val.to_s
               end
             end
           end
@@ -313,6 +316,39 @@ module Tracing
 
     def record_error(field : Field::Field, value : Exception) : Nil
       @entries << "  #{field.name}: #{value.message || ""}"
+    end
+  end
+
+  private class JsonFieldCollector
+    include Core::Field::Visit
+    property entries : Hash(String, JSON::Any) = {} of String => JSON::Any
+
+    def record_debug(field : Field::Field, value) : Nil
+      @entries[field.name] = JSON::Any.new(value.to_s)
+    end
+
+    def record_i64(field : Field::Field, value : Int64) : Nil
+      @entries[field.name] = JSON::Any.new(value)
+    end
+
+    def record_u64(field : Field::Field, value : UInt64) : Nil
+      @entries[field.name] = JSON::Any.new(value)
+    end
+
+    def record_f64(field : Field::Field, value : Float64) : Nil
+      @entries[field.name] = JSON::Any.new(value)
+    end
+
+    def record_bool(field : Field::Field, value : Bool) : Nil
+      @entries[field.name] = JSON::Any.new(value)
+    end
+
+    def record_str(field : Field::Field, value : String) : Nil
+      @entries[field.name] = JSON::Any.new(value)
+    end
+
+    def record_error(field : Field::Field, value : Exception) : Nil
+      @entries[field.name] = JSON::Any.new(value.message || "")
     end
   end
 end
