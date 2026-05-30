@@ -1674,3 +1674,64 @@ describe "OpenTelemetry dynamic span name" do
     name.should eq("default_name")
   end
 end
+
+# End-to-end integration — full stack
+describe "full stack integration" do
+  it "nested spans with filters, events, and field recording" do
+    io = IO::Memory.new
+    fmt = Tracing::FmtLayer.new(io).compact
+    filter = Tracing::EnvFilter.new("info")
+    registry = Tracing::Registry.new
+      .with(fmt)
+      .with(filter)
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "outer").in_scope do
+        info!("outer_event", step: 1)
+        s = span!(Level::INFO, "inner")
+        s.record(progress: 50)
+        s.in_scope do
+          info!("inner_event", detail: "working")
+          debug!("should_be_filtered")
+        end
+        s.record(progress: 100)
+      end
+    end
+
+    output = io.to_s
+    output.should contain("outer_event")
+    output.should contain("inner_event")
+    output.should_not contain("should_be_filtered")
+  end
+
+  it "flame layer generates folded stack output" do
+    io = IO::Memory.new
+    flame = Tracing::FlameLayer.new(io)
+    registry = Tracing::Registry.new.with(flame)
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      info_span!("root").in_scope do
+        info_span!("child").in_scope { }
+      end
+    end
+
+    output = io.to_s
+    output.should contain("root")
+    output.should contain("child")
+    output.should contain(";")
+  end
+
+  it "SpanTrace captures span context" do
+    registry = Tracing::Registry.new
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "request").in_scope do
+        span!(Level::INFO, "db").in_scope do
+          trace = Tracing::SpanTrace.capture(registry)
+          trace.spans.should contain("db")
+          trace.spans.should contain("request")
+        end
+      end
+    end
+  end
+end

@@ -43,6 +43,10 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Tracing::Subscriber module (with_default, set_global_default)
 - [x] Tracing.fmt_layer free function
 - [x] Dispatch.with_default fiber-local scoping
+- [x] Tracing.instrument block wrapper (port of #[instrument])
+- [x] @[Instrument] annotation
+- [x] STATIC_MAX_LEVEL — compile-time `-D` flags
+- [x] Span#record(**fields) post-creation field recording
 
 ## tracing-subscriber ✓
 
