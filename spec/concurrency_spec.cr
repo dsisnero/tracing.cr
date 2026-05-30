@@ -2,6 +2,7 @@ require "./spec_helper"
 require "../src/tracing/concurrency"
 
 private alias Level = Tracing::Level
+private alias Dispatch = Tracing::Dispatch
 
 private class FiberCollector < Tracing::Layer
   property names : Array(String) = [] of String
@@ -41,5 +42,20 @@ describe Tracing::Concurrency do
     end
 
     log.names.should contain("inside_fiber_with_span")
+  end
+
+  it "spawn_with_span attaches a specific span to the fiber" do
+    log = FiberCollector.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::INFO, "custom_span", tag: "concurrency")
+      chan = Tracing::Concurrency.spawn_with_span(s) do
+        Tracing.info("inside_custom_span")
+      end
+      chan.receive
+    end
+
+    log.names.should contain("inside_custom_span")
   end
 end

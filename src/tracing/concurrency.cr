@@ -23,4 +23,26 @@ module Tracing::Concurrency
 
     done
   end
+
+  # Spawn a fiber that runs inside the given span.
+  #
+  # Ported from upstream `tracing-futures::Instrument::instrument`.
+  def self.spawn_with_span(span : Span, &block : -> T) : Channel(T) forall T
+    dispatch = Dispatch.current
+    done = Channel(T).new
+
+    ::spawn do
+      if d = dispatch
+        Dispatch.with_default(d) do
+          result = span.in_scope { block.call }
+          done.send(result)
+        end
+      else
+        result = span.in_scope { block.call }
+        done.send(result)
+      end
+    end
+
+    done
+  end
 end
