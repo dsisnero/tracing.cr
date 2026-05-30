@@ -27,7 +27,7 @@ require "./tracing/opentelemetry/layer"
 require "./tracing/subscriber_conv"
 
 module Tracing
-  VERSION = "0.5.0"
+  VERSION = "0.5.1"
 
   def self.fmt_layer : FmtLayer
     FmtLayer.new
