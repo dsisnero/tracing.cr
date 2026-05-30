@@ -246,13 +246,92 @@ Enable file rotation via `make_writer` block in `src/tracing-subscriber/fmt.cr`:
 FmtLayer.make_writer { File.open("app.log", "a") }
 ```
 
+## JSON Output
+
+Output events as JSON lines via `src/tracing-subscriber/fmt.cr`:
+
+```crystal
+FmtLayer.new(STDOUT).json
+# => {"timestamp":"2026-...","level":"INFO","name":"request","user":"alice"}
+```
+
+## OpenTelemetry
+
+Bridge tracing spans to OpenTelemetry via `src/tracing-opentelemetry/layer.cr`:
+
+```crystal
+require "opentelemetry-api"
+require "opentelemetry-sdk"
+
+OpenTelemetry.configure do |config|
+  config.service_name = "my_app"
+end
+
+tracer = OpenTelemetry.tracer_provider.tracer("my_app")
+
+Registry.default
+  .with(OpenTelemetryLayer.new(tracer)
+    .with_level(Level::INFO))
+  .init
+```
+
+OTel fields on spans:
+- `otel.name` — dynamic span name
+- `otel.kind` — server/client/producer/consumer/internal
+- `otel.status_code` — Ok/Error
+- `otel.status_description` — status detail
+
+## Crystal Log Bridge
+
+Forward Crystal `Log` entries to tracing events via `src/tracing-subscriber/log_tracer.cr`:
+
+```crystal
+Registry.default.with(FmtLayer.new(STDOUT)).init
+Log.setup(:trace, LogTracer.new)
+Log.info { "routed to tracing" }
+```
+
+## Non-Blocking I/O
+
+Offload file writes to a worker fiber via `src/tracing-subscriber/appender.cr`:
+
+```crystal
+appender = RollingFileAppender.new(Rotation::DAILY, "logs", "app")
+nb, guard = NonBlocking.new(appender)
+FmtLayer.make_writer { nb.make_writer }
+```
+
+## Flamegraphs
+
+Generate flamegraph data from span timings via `src/tracing-subscriber/flame.cr`:
+
+```crystal
+flame, guard = FlameLayer.with_file("trace.folded")
+Registry.default.with(flame).init
+# ... run app ...
+# cat trace.folded | inferno-flamegraph > flame.svg
+```
+
+## Instrumentation
+
+Auto-wrap blocks in spans via `src/tracing/facade_dsl.cr`:
+
+```crystal
+@[Tracing::Instrument]
+def process(id : Int32)
+  Tracing.instrument("process", id: id) do
+    # work happens inside span "process"
+  end
+end
+```
+
 ## Development
 
 ```bash
 shards install
 crystal tool format --check src spec
 ameba src spec
-crystal spec            # 111 parity specs
+crystal spec            # 141 parity specs
 ```
 
 ## License

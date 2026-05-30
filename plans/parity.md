@@ -14,8 +14,8 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-error | 0.1.0 | ✓ Complete | — |
 | tracing-flame | 0.1.0 | ✓ Complete | — |
 | tracing-attributes | 0.1.0 | ✓ Complete | — |
-| tracing-serde | 0.1.0 | Not started | — |
-| tracing-opentelemetry | 0.33.0 | In progress | `plans/inventory/tracing_opentelemetry_port_inventory.tsv` (69 items) |
+| tracing-serde | 0.1.0 | ✓ In progress — JSON mode done | — |
+| tracing-opentelemetry | 0.33.0 | ✓ In progress — 11 features | `plans/inventory/tracing_opentelemetry_port_inventory.tsv` (69 items) |
 
 ## tracing-core ✓
 
