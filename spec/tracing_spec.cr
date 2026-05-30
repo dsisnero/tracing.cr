@@ -1642,7 +1642,7 @@ describe "FmtLayer JSON mode (ported from tracing-serde)" do
     parsed["name"].should eq("json_event")
     parsed["level"].should eq("INFO")
     parsed["user"].should eq("alice")
-    parsed["count"].should eq("42") # strings from field collector
+    parsed["count"].should eq(42_i64) # typed: integer now
   end
 
   it "includes timestamp in JSON output" do
@@ -1820,5 +1820,21 @@ describe "FmtLayer JSON typed values" do
     output = io.to_s.strip
     output.should contain("0.5")
     output.should_not contain("\"0.5\"")
+  end
+end
+
+# RED tests — Targets with_target(LevelFilter) overload
+describe "Targets.with_target(LevelFilter)" do
+  it "accepts LevelFilter in addition to Level" do
+    filter = Tracing::Targets.new
+      .with_target("my_crate", LevelFilter.info)
+      .with_default(LevelFilter.trace)
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+
+    meta = Metadata.new("ev", "my_crate::module", Level::INFO)
+    filter.enabled?(meta, ctx).should be_true
+
+    meta2 = Metadata.new("ev", "my_crate::module", Level::DEBUG)
+    filter.enabled?(meta2, ctx).should be_false
   end
 end

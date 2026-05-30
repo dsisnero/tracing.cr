@@ -18,6 +18,11 @@ module Tracing
       self
     end
 
+    def with_target(target : String, level : LevelFilter) : self
+      @rules << Rule.new(target, level)
+      self
+    end
+
     def with_default(level : LevelFilter) : self
       @default_level = level
       self
@@ -43,9 +48,17 @@ module Tracing
             val = pair[1]?.try(&.strip)
             next unless val
             if key == "default"
-              targets.with_default(LevelFilter.parse(val))
+              begin
+                targets.with_default(LevelFilter.parse(val))
+              rescue ex : ArgumentError
+                # skip invalid level
+              end
             else
-              targets.with_target(key, Level.parse(val))
+              begin
+                targets.with_target(key, Level.parse(val))
+              rescue ex : ArgumentError
+                # skip invalid target=level pair
+              end
             end
           end
         end
