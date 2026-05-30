@@ -22,6 +22,7 @@ module Tracing
     @show_level : Bool
     @compact_mode : Bool
     @pretty_mode : Bool
+    @json_mode : Bool
     @span_events : FmtSpan
     @make_writer : (-> IO)?
     @use_ansi : Bool
@@ -33,6 +34,7 @@ module Tracing
       @show_level = true
       @compact_mode = false
       @pretty_mode = false
+      @json_mode = false
       @span_events = FmtSpan::FULL
       @make_writer = nil
       @use_ansi = false
@@ -50,6 +52,13 @@ module Tracing
       self
     end
 
+    def json : self
+      @json_mode = true
+      @compact_mode = false
+      @pretty_mode = false
+      self
+    end
+
     def with_span_events(events : FmtSpan) : self
       @span_events = events
       self
@@ -63,6 +72,38 @@ module Tracing
 
     def writer_block=(writer : (-> IO)?) : Nil
       @make_writer = writer
+    end
+
+    private def write_json_event(io : IO, event : Core::Event, ctx : LayerContext) : Nil
+      span_name = ctx.event_span(event).try(&.name)
+
+      JSON.build(io) do |json|
+        json.object do
+          json.field "timestamp", Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ")
+          json.field "level", event.metadata.level.as_str
+          json.field "name", event.metadata.name
+          if @show_target
+            json.field "target", event.metadata.target
+          end
+          if span_name
+            json.field "span", span_name
+          end
+
+          vs = event.values
+          if !vs.empty?
+            collector = FieldCollector.new
+            vs.visit(collector)
+            if fields_str = collector.fields
+              fields_str.split(" ").each do |pair|
+                key, val = pair.split("=", 2)
+                next unless key && val
+                json.field key, val
+              end
+            end
+          end
+        end
+      end
+      io << "\n"
     end
 
     private def resolve_io : IO
@@ -122,6 +163,11 @@ module Tracing
 
     def on_event(event : Core::Event, ctx : LayerContext) : Nil
       io = resolve_io
+
+      if @json_mode
+        write_json_event(io, event, ctx)
+        return
+      end
       span_name = ctx.event_span(event).try(&.name) || ""
 
       unless @compact_mode

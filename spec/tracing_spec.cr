@@ -1624,3 +1624,38 @@ describe "OpenTelemetryLayer configuration" do
     layer.enabled?(meta, Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)).should be_true
   end
 end
+
+# RED tests — FmtLayer JSON mode (tracing-serde)
+describe "FmtLayer JSON mode (ported from tracing-serde)" do
+  it "outputs events as JSON lines" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("json_event", user: "alice", count: 42)
+    end
+
+    output = io.to_s.strip
+    # Should be valid JSON
+    parsed = JSON.parse(output)
+    parsed["name"].should eq("json_event")
+    parsed["level"].should eq("INFO")
+    parsed["user"].should eq("alice")
+    parsed["count"].should eq("42")   # strings from field collector
+  end
+
+  it "includes timestamp in JSON output" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("timed_event")
+    end
+
+    output = io.to_s.strip
+    parsed = JSON.parse(output)
+    parsed["timestamp"].should_not be_nil
+  end
+end
