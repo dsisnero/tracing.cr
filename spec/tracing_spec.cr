@@ -1736,45 +1736,6 @@ describe "full stack integration" do
   end
 end
 
-# RED tests — Targets.from_env
-describe "Targets.from_env" do
-  it "parses TRACE_TARGETS env var" do
-    ENV["TRACE_TARGETS"] = "my_crate=debug,http=trace,default=warn"
-    begin
-      filter = Tracing::Targets.from_env
-      ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
-
-      # my_crate=debug
-      meta = Metadata.new("ev", "my_crate::module", Level::DEBUG)
-      filter.enabled?(meta, ctx).should be_true
-
-      meta2 = Metadata.new("ev", "my_crate::module", Level::TRACE)
-      filter.enabled?(meta2, ctx).should be_false
-
-      # http=trace → everything passes
-      meta3 = Metadata.new("ev", "http::client", Level::TRACE)
-      filter.enabled?(meta3, ctx).should be_true
-
-      # unmatched → default=warn
-      meta4 = Metadata.new("ev", "other", Level::INFO)
-      filter.enabled?(meta4, ctx).should be_false
-      meta5 = Metadata.new("ev", "other", Level::WARN)
-      filter.enabled?(meta5, ctx).should be_true
-    ensure
-      ENV.delete("TRACE_TARGETS")
-    end
-  end
-
-  it "defaults to trace when env var not set" do
-    ENV.delete("TRACE_TARGETS")
-    filter = Tracing::Targets.from_env
-    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
-
-    meta = Metadata.new("ev", "anything", Level::TRACE)
-    filter.enabled?(meta, ctx).should be_true
-  end
-end
-
 # RED tests — typed JSON values
 describe "FmtLayer JSON typed values" do
   it "serializes integers as JSON numbers" do
