@@ -90,4 +90,12 @@ describe Tracing::Concurrency do
 
     log.names.size.should be >= 2
   end
+
+  it "TracedChannel delegates receive? to inner channel" do
+    inner = Channel(Int32).new(1)
+    ch = Tracing::Concurrency::TracedChannel.new(inner, "chan")
+
+    spawn { inner.send(7) }
+    ch.receive?.should eq(7)
+  end
 end

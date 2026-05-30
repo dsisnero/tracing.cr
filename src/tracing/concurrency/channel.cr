@@ -19,5 +19,11 @@ module Tracing::Concurrency
       Tracing.info("channel.receive", channel: @name, value: result)
       result
     end
+
+    def receive? : T?
+      result = @channel.receive?
+      Tracing.info("channel.receive", channel: @name, value: result) if result
+      result
+    end
   end
 end
