@@ -28,7 +28,7 @@ require "./tracing/instrument_annotation"
 require "./tracing-opentelemetry/layer"
 
 module Tracing
-  VERSION = "0.1.0"
+  VERSION = "0.5.0"
 
   def self.fmt_layer : FmtLayer
     FmtLayer.new

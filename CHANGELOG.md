@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] — 2026-05-29
+
+Added 10 sub-crates: macros, log, appender, mock, error, flame, attributes,
+opentelemetry, serde. 141 parity specs across 30+ source files.
+
 ## [0.4.0] — 2026-05-28
 
 Initial Crystal port of tokio-rs/tracing — 12 sub-crates with 141 parity specs.
