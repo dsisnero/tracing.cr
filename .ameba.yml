@@ -17,5 +17,5 @@ Lint/UselessAssign:
 # match arms for numeric and string variants. Splitting would fragment the port.
 Metrics/CyclomaticComplexity:
   Excluded:
-    - src/tracing/types.cr
-    - src/tracing-subscriber/fmt.cr
+    - src/tracing/core/types.cr
+    - src/tracing/subscriber/fmt.cr
