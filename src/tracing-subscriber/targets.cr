@@ -27,6 +27,32 @@ module Tracing
       @default_level
     end
 
+    # Parse target=level pairs from environment variable.
+    #
+    # Format: "target=level,target2=level,default=level"
+    #
+    # Ported from upstream `tracing_subscriber::filter::Targets::from_env`.
+    def self.from_env(var : String = "TRACE_TARGETS") : self
+      targets = new
+      if raw = ENV[var]?
+        raw.split(',').each do |part|
+          part = part.strip
+          next if part.empty?
+          if pair = part.split('=', 2)
+            key = pair[0].strip
+            val = pair[1]?.try(&.strip)
+            next unless val
+            if key == "default"
+              targets.with_default(LevelFilter.parse(val))
+            else
+              targets.with_target(key, Level.parse(val))
+            end
+          end
+        end
+      end
+      targets
+    end
+
     def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
       level = matching_level(metadata.target)
       metadata.level <= level

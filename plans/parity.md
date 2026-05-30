@@ -88,8 +88,8 @@ Upstream: `vendor/tracing/tracing-macros/src/lib.rs` (46 lines)
 
 Upstream: `vendor/tracing/tracing-log/src/` (34 items in manifest)
 
-- [ ] `LogTracer` — `Log::Backend` that forwards `Log` records to tracing events
-- [ ] `InterestCacheConfig` — cache interest decisions for log records
+- [x] `LogTracer` — `Log::Backend` that forwards `Log` records to tracing events
+- [x] `InterestCacheConfig` — cache interest decisions for log records
 - [ ] `AsLog` trait — convert tracing types to log equivalents
 - [ ] Integration: `Log.setup` / `Log.builder` with LogTracer
 
@@ -97,9 +97,9 @@ Upstream: `vendor/tracing/tracing-log/src/` (34 items in manifest)
 
 Upstream: `vendor/tracing/tracing-appender/src/` (49 items in manifest)
 
-- [ ] `NonBlocking` — dedicated writer thread with bounded channel
+- [x] `NonBlocking` — dedicated writer thread with bounded channel
 - [ ] `NonBlockingBuilder` — builder API (buffered_lines_limit, lossy, etc.)
-- [ ] `RollingFileAppender` — time/size-based file rotation
+- [x] `RollingFileAppender` — time/size-based file rotation
 - [ ] `Rotation` enum — `DAILY`, `HOURLY`, `MINUTELY`, `NEVER`
 - [ ] `WorkerGuard` — ensures flush on drop
 - [ ] `MsgBuf` — reusable message buffer
@@ -108,7 +108,7 @@ Upstream: `vendor/tracing/tracing-appender/src/` (49 items in manifest)
 
 ### tracing-mock
 
-- [ ] `MockSubscriber` / `MockLayer` — record expected span/event patterns
+- [x] `MockSubscriber` / `MockLayer` — record expected span/event patterns
 - [ ] `expect!` — builder for expected events
 - [ ] `check_span` / `with_span` — verify span creation and fields
 
@@ -119,12 +119,12 @@ Upstream: `vendor/tracing/tracing-appender/src/` (49 items in manifest)
 
 ### tracing-error
 
-- [ ] `TracedError` wrapper — capture span context on error
+- [x] `TracedError` wrapper — capture span context on error
 - [ ] `InstrumentError` trait — `.in_error(err)` builder
 
 ### tracing-flame
 
-- [ ] `FlameLayer` — records enter/exit timestamps
+- [x] `FlameLayer` — records enter/exit timestamps
 - [ ] Folded stack format output — consumed by flamegraph tools
 
 ## Quality Gates
