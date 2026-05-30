@@ -4,3 +4,6 @@
 [submodule "vendor/tracing-opentelemetry"]
 	path = vendor/tracing-opentelemetry
 	url = https://github.com/tokio-rs/tracing-opentelemetry.git
+[submodule "vendor/perf-tools"]
+	path = vendor/perf-tools
+	url = https://github.com/crystal-lang/perf-tools.git
