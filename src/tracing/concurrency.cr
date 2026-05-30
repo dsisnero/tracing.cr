@@ -45,4 +45,21 @@ module Tracing::Concurrency
 
     done
   end
+
+  # Spawn a fiber that uses a specific subscriber.
+  #
+  # Ported from upstream `tracing-futures::WithSubscriber::with_subscriber`.
+  def self.with_subscriber(subscriber : Core::Subscriber, &block : -> T) : Channel(T) forall T
+    done = Channel(T).new
+    dispatch = Dispatch.new(subscriber)
+
+    ::spawn do
+      Dispatch.with_default(dispatch) do
+        result = block.call
+        done.send(result)
+      end
+    end
+
+    done
+  end
 end

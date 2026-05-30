@@ -58,4 +58,22 @@ describe Tracing::Concurrency do
 
     log.names.should contain("inside_custom_span")
   end
+
+  it "with_subscriber uses a specific subscriber in the fiber" do
+    log_a = FiberCollector.new
+    log_b = FiberCollector.new
+    sub_a = Tracing::Registry.new.with(log_a)
+    sub_b = Tracing::Registry.new.with(log_b)
+
+    Tracing::Dispatch.with_default(Tracing::Dispatch.new(sub_a)) do
+      chan = Tracing::Concurrency.with_subscriber(sub_b) do
+        Tracing.info("routed_to_b")
+        99
+      end
+      chan.receive.should eq(99)
+    end
+
+    log_a.names.should be_empty
+    log_b.names.should contain("routed_to_b")
+  end
 end
