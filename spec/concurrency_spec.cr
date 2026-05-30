@@ -76,4 +76,18 @@ describe Tracing::Concurrency do
     log_a.names.should be_empty
     log_b.names.should contain("routed_to_b")
   end
+
+  it "TracedChannel records send events" do
+    log = FiberCollector.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    Tracing::Dispatch.with_default(Tracing::Dispatch.new(subscriber)) do
+      inner = Channel(Int32).new(1)
+      ch = Tracing::Concurrency::TracedChannel.new(inner, "data_chan")
+      ch.send(42)
+      ch.receive.should eq(42)
+    end
+
+    log.names.size.should be >= 2
+  end
 end
