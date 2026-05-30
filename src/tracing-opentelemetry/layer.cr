@@ -79,6 +79,10 @@ module Tracing
         "exception.stacktrace" => stacktrace,
       }
     end
+
+    def resolve_span_name(default : String, otel_name : String?) : String
+      otel_name || default
+    end
   end
 
   struct OtelSpanData

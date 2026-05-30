@@ -1642,7 +1642,7 @@ describe "FmtLayer JSON mode (ported from tracing-serde)" do
     parsed["name"].should eq("json_event")
     parsed["level"].should eq("INFO")
     parsed["user"].should eq("alice")
-    parsed["count"].should eq("42")   # strings from field collector
+    parsed["count"].should eq("42") # strings from field collector
   end
 
   it "includes timestamp in JSON output" do
@@ -1657,5 +1657,20 @@ describe "FmtLayer JSON mode (ported from tracing-serde)" do
     output = io.to_s.strip
     parsed = JSON.parse(output)
     parsed["timestamp"].should_not be_nil
+  end
+end
+
+# RED tests — OTel dynamic span name (otel.name field)
+describe "OpenTelemetry dynamic span name" do
+  it "extracts otel.name field for span name override" do
+    layer = Tracing::OpenTelemetryLayer.new
+    name = layer.resolve_span_name("default_name", otel_name: "custom_overridden")
+    name.should eq("custom_overridden")
+  end
+
+  it "uses original name when otel.name is absent" do
+    layer = Tracing::OpenTelemetryLayer.new
+    name = layer.resolve_span_name("default_name", nil)
+    name.should eq("default_name")
   end
 end

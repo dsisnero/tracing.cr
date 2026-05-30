@@ -18,3 +18,4 @@ Lint/UselessAssign:
 Metrics/CyclomaticComplexity:
   Excluded:
     - src/tracing/types.cr
+    - src/tracing-subscriber/fmt.cr
