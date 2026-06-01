@@ -17,7 +17,7 @@ describe Tracing::Concurrency do
     log = FiberCollector.new
     subscriber = Tracing::Registry.new.with(log)
 
-    Tracing::Dispatch.with_default(Tracing::Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(subscriber)) do
       chan = Tracing::Concurrency.spawn("worker") do
         Tracing.info("inside_fiber")
         42
@@ -32,7 +32,7 @@ describe Tracing::Concurrency do
     log = FiberCollector.new
     subscriber = Tracing::Registry.new.with(log)
 
-    Tracing::Dispatch.with_default(Tracing::Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(subscriber)) do
       info_span!("parent_span").in_scope do
         chan = Tracing::Concurrency.spawn("worker") do
           Tracing.info("inside_fiber_with_span")
@@ -44,7 +44,7 @@ describe Tracing::Concurrency do
     log.names.should contain("inside_fiber_with_span")
   end
 
-  it "spawn_with_span attaches a specific span to the fiber" do
+  it "spawn_with_span attaches a specific span" do
     log = FiberCollector.new
     subscriber = Tracing::Registry.new.with(log)
 
@@ -59,13 +59,13 @@ describe Tracing::Concurrency do
     log.names.should contain("inside_custom_span")
   end
 
-  it "with_subscriber uses a specific subscriber in the fiber" do
+  it "with_subscriber uses a specific subscriber" do
     log_a = FiberCollector.new
     log_b = FiberCollector.new
     sub_a = Tracing::Registry.new.with(log_a)
     sub_b = Tracing::Registry.new.with(log_b)
 
-    Tracing::Dispatch.with_default(Tracing::Dispatch.new(sub_a)) do
+    Dispatch.with_default(Dispatch.new(sub_a)) do
       chan = Tracing::Concurrency.with_subscriber(sub_b) do
         Tracing.info("routed_to_b")
         99
@@ -77,11 +77,11 @@ describe Tracing::Concurrency do
     log_b.names.should contain("routed_to_b")
   end
 
-  it "TracedChannel records send events" do
+  it "TracedChannel records send/receive events" do
     log = FiberCollector.new
     subscriber = Tracing::Registry.new.with(log)
 
-    Tracing::Dispatch.with_default(Tracing::Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(subscriber)) do
       inner = Channel(Int32).new(1)
       ch = Tracing::Concurrency::TracedChannel.new(inner, "data_chan")
       ch.send(42)
@@ -91,10 +91,9 @@ describe Tracing::Concurrency do
     log.names.size.should be >= 2
   end
 
-  it "TracedChannel delegates receive? to inner channel" do
+  it "TracedChannel.receive? delegates to inner channel" do
     inner = Channel(Int32).new(1)
     ch = Tracing::Concurrency::TracedChannel.new(inner, "chan")
-
     spawn { inner.send(7) }
     ch.receive?.should eq(7)
   end
