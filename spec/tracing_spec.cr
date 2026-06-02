@@ -1799,3 +1799,34 @@ describe "Targets.with_target(LevelFilter)" do
     filter.enabled?(meta2, ctx).should be_false
   end
 end
+
+# Ported from upstream span relationship model
+describe "Span#follows_from" do
+  it "records a follows-from relationship between spans" do
+    log = FollowsLog.new
+    subscriber = Tracing::Registry.new.with(log)
+
+    cause_id = nil
+    effect_id = nil
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      a = span!(Level::INFO, "cause")
+      b = span!(Level::INFO, "effect")
+      cause_id = a.id
+      effect_id = b.id
+      b.follows_from(a.id.not_nil!)
+    end
+
+    log.relationships.size.should eq(1)
+    log.relationships[0][0].should eq(effect_id)
+    log.relationships[0][1].should eq(cause_id)
+  end
+end
+
+private class FollowsLog < Tracing::Layer
+  property relationships : Array(Tuple(Tracing::CoreSpan::Id, Tracing::CoreSpan::Id)) = [] of Tuple(Tracing::CoreSpan::Id, Tracing::CoreSpan::Id)
+
+  def on_record_follows_from(span : Tracing::CoreSpan::Id, follows : Tracing::CoreSpan::Id, ctx : Tracing::LayerContext)
+    @relationships << {span, follows}
+  end
+end
