@@ -67,6 +67,13 @@ module Tracing
       @inner.nil?
     end
 
+    # Returns self if enabled, otherwise the current span.
+    #
+    # Ported from vendor/tracing/tracing/src/span.rs:1027
+    def or_current : Span
+      disabled? ? Span.current : self
+    end
+
     def enter : Entered
       if inner = @inner
         inner.subscriber.enter(inner.id)

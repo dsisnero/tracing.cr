@@ -1851,4 +1851,25 @@ describe "Span.current" do
       end
     end
   end
+
+  it "or_current returns self when enabled" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::INFO, "enabled_span")
+      s2 = s.or_current
+      s2.id.should eq(s.id)
+    end
+  end
+
+  it "or_current returns current span when disabled" do
+    registry = Tracing::Registry.new
+    Dispatch.with_default(Dispatch.new(registry)) do
+      outer = span!(Level::INFO, "outer_span")
+      outer.in_scope do
+        disabled = Span.none
+        s = disabled.or_current
+        s.id.should_not be_nil
+      end
+    end
+  end
 end
