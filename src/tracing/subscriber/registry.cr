@@ -34,9 +34,18 @@ module Tracing
       @current_span_ids = Hash(UInt64, Array(Core::Span::Id)).new
     end
 
-    # Get the current span for the current fiber.
-    def current_span : Core::Span::Id?
+    # Get the current span ID for the current fiber.
+    def current_span_id : Core::Span::Id?
       @current_span_ids[Fiber.current.object_id]?.try(&.last?)
+    end
+
+    def current_span : Core::Span::Current
+      if id = current_span_id
+        if data = span_data(id)
+          return Core::Span::Current.current(id, data.metadata)
+        end
+      end
+      Core::Span::Current.none
     end
 
     # Get the full current span stack for the current fiber (innermost first).

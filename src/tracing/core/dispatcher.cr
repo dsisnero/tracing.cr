@@ -153,6 +153,10 @@ module Tracing
         @subscriber.try(&.max_level_hint)
       end
 
+      def current_span : Core::Span::Current
+        @subscriber.try(&.current_span) || Core::Span::Current.unknown
+      end
+
       def on_register_dispatch : Nil
       end
 

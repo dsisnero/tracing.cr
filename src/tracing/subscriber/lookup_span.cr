@@ -52,7 +52,7 @@ module Tracing
 
       if event.contextual?
         if registry = @subscriber.as?(Registry)
-          if current_id = registry.current_span
+          if current_id = registry.current_span_id
             return subscriber.span(current_id)
           end
         end

@@ -43,6 +43,26 @@ module Tracing
       new(inner, meta)
     end
 
+    # Returns the currently entered span, or a disabled span.
+    #
+    # Ported from vendor/tracing/tracing/src/span.rs:550
+    def self.current : Span
+      dispatch = Dispatch.current
+      return none unless dispatch
+
+      current = dispatch.current_span
+      if current.current? && (id = current.id) && (meta = current.metadata)
+        inner = Inner.new(id, dispatch)
+        return new(inner, meta)
+      end
+
+      none
+    end
+
+    def self.none : Span
+      new(nil, Metadata.new("", "", Level::INFO, kind: Kind::SPAN))
+    end
+
     def disabled? : Bool
       @inner.nil?
     end

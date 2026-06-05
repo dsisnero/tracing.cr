@@ -506,12 +506,12 @@ describe "Registry current span tracking" do
   it "tracks current span after enter" do
     registry = Tracing::Registry.new
     Dispatch.with_default(Dispatch.new(registry)) do
-      registry.current_span.should be_nil
+      registry.current_span_id.should be_nil
 
       s = span!(Level::INFO, "test")
       s.in_scope do
-        registry.current_span.should_not be_nil
-        data = registry.span_data(registry.current_span.not_nil!)
+        registry.current_span_id.should_not be_nil
+        data = registry.span_data(registry.current_span_id.not_nil!)
         data.try(&.name).should eq("test")
       end
     end
@@ -1828,5 +1828,27 @@ private class FollowsLog < Tracing::Layer
 
   def on_record_follows_from(span : Tracing::CoreSpan::Id, follows : Tracing::CoreSpan::Id, ctx : Tracing::LayerContext)
     @relationships << {span, follows}
+  end
+end
+
+# Ported from vendor/tracing/tracing/src/span.rs:550
+describe "Span.current" do
+  it "returns disabled span when no span is entered" do
+    subscriber = TestSubscriber.new
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Span.current
+      s.disabled?.should be_true
+    end
+  end
+
+  it "returns the currently entered span" do
+    registry = Tracing::Registry.new
+    Dispatch.with_default(Dispatch.new(registry)) do
+      span!(Level::INFO, "test_current").in_scope do
+        s = Span.current
+        s.disabled?.should be_false
+        s.id.should_not be_nil
+      end
+    end
   end
 end
