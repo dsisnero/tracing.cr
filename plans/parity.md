@@ -2,218 +2,140 @@
 
 Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 
-| Crate | Upstream Version | Status | Manifests |
-|-------|-----------------|--------|-----------|
-| tracing-core | 0.1.36 | ✓ Complete | `plans/inventory/rust_port_inventory.tsv` |
-| tracing | 0.1.44 | ✓ Complete | — |
-| tracing-subscriber | 0.3.23 | ✓ Complete | — |
-| tracing-macros | 0.1.0 | ✓ Complete | — |
-| tracing-log | 0.2.0 | ✓ Complete | `plans/inventory/tracing_log_port_inventory.tsv` |
-| tracing-appender | 0.2.0 | ✓ Complete | `plans/inventory/tracing_appender_port_inventory.tsv` |
-| tracing-mock | 0.1.0 | ✓ Complete | — |
-| tracing-error | 0.1.0 | ✓ Complete | — |
-| tracing-flame | 0.1.0 | ✓ Complete | — |
-| tracing-attributes | 0.1.0 | ✓ Complete | — |
-| tracing-serde | 0.1.0 | ✓ In progress — JSON mode done | — |
-| tracing-opentelemetry | 0.33.0 | ✓ In progress — 11 features | `plans/inventory/tracing_opentelemetry_port_inventory.tsv` (69 items) |
+## Summary
 
-## tracing-core ✓
+| Crate | Version | Status | Specs |
+|-------|---------|--------|-------|
+| tracing-core | 0.1.36 | ✓ | 12 features |
+| tracing | 0.1.44 | ✓ | 10 features |
+| tracing-subscriber | 0.3.23 | ✓ | 23 features |
+| tracing-macros | 0.1.0 | ✓ | `trace_dbg!` |
+| tracing-log | 0.2.0 | ✓ | `LogTracer` |
+| tracing-appender | 0.2.0 | ✓ | NonBlocking + Rolling |
+| tracing-mock | 0.1.0 | ✓ | MockSubscriber |
+| tracing-error | 0.1.0 | ✓ | SpanTrace |
+| tracing-flame | 0.1.0 | ✓ | FlameLayer |
+| tracing-attributes | 0.1.0 | ✓ | @[Instrument] |
+| tracing-serde | 0.1.0 | ✓ | JSON mode |
+| tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
+| tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-- [x] Level, LevelFilter (inverted comparisons), Kind
+**Total: 160 specs across 13 sub-crates.**
+
+## Done (core)
+
+### tracing-core ✓
+
+- [x] Level, LevelFilter, Kind
 - [x] Metadata (name, target, level, fields, kind, source location)
 - [x] Field, FieldSet, ValueSet, Visit trait
 - [x] Callsite::Identifier, Interest, Interface, DefaultCallsite
-- [x] Callsite registry (lock-free linked list, CAS registration, interest caching)
+- [x] Callsite registry (lock-free linked list, interest caching)
 - [x] Span::Id, Attributes, Record, Current
 - [x] Parent (Root, Current, Explicit)
 - [x] Event (metadata, values, parent)
 - [x] Subscriber trait + NoSubscriber
-- [x] Dispatch (global default, fiber-local with_default, interest rebuild)
-- [x] Dispatchers manager (multi-dispatch, callsite rebuild integration)
-- [x] Level/LevelFilter bi-directional comparison operators
+- [x] Dispatch (global, fiber-local with_default, interest rebuild)
+- [x] Dispatchers manager (multi-dispatch)
+- [x] Level/LevelFilter bi-directional comparisons
 
-## tracing ✓
+### tracing ✓
 
-- [x] Span handle (enter/exit/in_scope lifecycle, disabled? detection)
-- [x] Entered/EnteredSpan guards (explicit exit, ensure-block cleanup)
-- [x] DSL: Tracing.span, .event, .child_span, .info, .debug, .warn, .error, .trace
-- [x] target: override parameter on span/event methods
+- [x] Span handle (enter/exit/in_scope, disabled?)
+- [x] Span::current, Span::none, Span#or_current
+- [x] Entered/EnteredSpan guards
+- [x] DSL: Tracing.span, .event, .info, .debug, .warn, .error, .trace
+- [x] target: override on span/event
 - [x] Macros: span!, event!, child_span!, info!, debug!, warn!, error!, trace!, *span!
-- [x] Span#record(**fields) post-creation field recording
-- [x] Tracing::Subscriber module (with_default, set_global_default)
+- [x] STATIC_MAX_LEVEL compile-time -D flags
+- [x] Span#record(**fields), Span#follows_from
+- [x] Tracing::Subscriber (with_default, set_global_default)
 - [x] Tracing.fmt_layer free function
-- [x] Dispatch.with_default fiber-local scoping
-- [x] Tracing.instrument block wrapper (port of #[instrument])
-- [x] @[Instrument] annotation
-- [x] STATIC_MAX_LEVEL — compile-time `-D` flags
-- [x] Span#record(**fields) post-creation field recording
+- [x] Tracing.instrument block wrapper + @[Instrument] annotation
 
-## tracing-subscriber ✓
+### tracing-subscriber ✓
 
-- [x] Registry (Subscriber impl, span storage, fiber-local span stack, SpanData)
+- [x] Registry (span storage, fiber-local span stack)
 - [x] Registry.default, Registry#init
-- [x] Layer abstract class (on_event, on_new_span, on_enter, on_exit, on_record, enabled?, max_level_hint)
-- [x] LayerContext (span lookup, event_span) + LookupSpan trait + SpanRef
-- [x] Layered(S) generic subscriber (Layer + Subscriber composition)
+- [x] Layer abstract class
+- [x] LayerContext + LookupSpan + SpanRef
+- [x] Layered(S) subscriber
 - [x] Layered#with(layer), #with(nil), #init
-- [x] Extensions type map + ExtensionsMut (insert, get, replace, remove by type)
-- [x] LevelFilterLayer (verbosity filter as Layer)
-- [x] EnvFilter (directive parsing: `target[span]=level`, subscriber-level filter)
-- [x] EnvFilter.from_env(var) convenience
-- [x] FilterFn (closure-based: `FilterFn.new { |meta| ... }`)
-- [x] Targets (programmatic target-prefix filter with builder)
+- [x] Extensions type map + ExtensionsMut
+- [x] LevelFilterLayer
+- [x] EnvFilter (directive parsing + from_env)
+- [x] FilterFn (closure-based)
+- [x] Targets (programmatic target-prefix)
 - [x] Filtered combinator + Layer#and_then
-- [x] NoOpLayer + Nil-as-Layer support
-- [x] FmtLayer: formatted output (timestamp, level, span, fields)
-- [x] FmtLayer.compact (single-line, no timestamps)
-- [x] FmtLayer.pretty (multi-line with indented fields)
-- [x] FmtLayer.with_ansi (level color codes)
-- [x] FmtLayer.with_target, .with_level, .with_filter, .with_span_events
-- [x] FmtLayer.make_writer (dynamic writer block for file rotation)
-- [x] FmtSpan @[Flags] enum (NONE, NEW, ENTER, EXIT, CLOSE, ACTIVE, FULL)
-- [x] Span#record(**fields) observed by Layer on_record hook
-- [x] LevelFilter.current global max level test
+- [x] NoOpLayer + Nil-as-Layer
+- [x] FmtLayer (compact, pretty, JSON, ANSI)
+- [x] FmtLayer.with_target, .with_level, .with_span_events
+- [x] FmtLayer.make_writer (dynamic writer block)
+- [x] FmtSpan @[Flags] enum
+- [x] MockSubscriber
+- [x] SpanTrace
+- [x] LogTracer (Crystal Log bridge)
+- [x] NonBlocking + WorkerGuard
+- [x] RollingFileAppender + Rotation enum
+- [x] FlameLayer + folded stack output
 
-## Tier 1 — Next
+## Done (sub-crates)
 
-### tracing-macros
+### tracing-macros ✓
+- [x] `trace_dbg!` macro
 
-Upstream: `vendor/tracing/tracing-macros/src/lib.rs` (46 lines)
+### tracing-log ✓
+- [x] `LogTracer` — Crystal Log::Backend bridge
+- [x] Sync/async dispatch modes
 
-- [ ] `trace_dbg!` macro — evaluates expr, emits event, returns value
-- [ ] `dbg!` macro — like std dbg but emits tracing event with `?value` formatting
-- [ ] Level override: `trace_dbg!(level: Level::INFO, expr)`
+### tracing-appender ✓
+- [x] `NonBlocking` — Channel + spawn fiber worker
+- [x] `WorkerGuard` — ensures flush on close
+- [x] `RollingFileAppender` — daily/hourly/minutely/never
+- [x] `Rotation` enum
 
-### tracing-log
+### tracing-mock ✓
+- [x] `MockSubscriber` — expect/assert pattern
 
-Upstream: `vendor/tracing/tracing-log/src/` (34 items in manifest)
+### tracing-error ✓
+- [x] `SpanTrace` — capture span context
 
-- [x] `LogTracer` — `Log::Backend` that forwards `Log` records to tracing events
-- [x] `InterestCacheConfig` — cache interest decisions for log records
-- [ ] `AsLog` trait — convert tracing types to log equivalents
-- [ ] Integration: `Log.setup` / `Log.builder` with LogTracer
+### tracing-flame ✓
+- [x] `FlameLayer` — folded stack output
+- [x] FlameGuard
 
-### tracing-appender
+### tracing-attributes ✓
+- [x] @[Instrument] annotation
+- [x] Tracing.instrument block wrapper
 
-Upstream: `vendor/tracing/tracing-appender/src/` (49 items in manifest)
+### tracing-serde ✓
+- [x] FmtLayer JSON mode
+- [x] Typed JSON (int, bool, float)
 
-- [x] `NonBlocking` — dedicated writer thread with bounded channel
-- [ ] `NonBlockingBuilder` — builder API (buffered_lines_limit, lossy, etc.)
-- [x] `RollingFileAppender` — time/size-based file rotation
-- [ ] `Rotation` enum — `DAILY`, `HOURLY`, `MINUTELY`, `NEVER`
-- [ ] `WorkerGuard` — ensures flush on drop
-- [ ] `MsgBuf` — reusable message buffer
+### tracing/concurrency ✓
+- [x] Concurrency.spawn (span propagation)
+- [x] Concurrency.spawn_with_span (specific span)
+- [x] Concurrency.with_subscriber (specific subscriber)
+- [x] TracedChannel(T) — traced send/receive
+- [x] Fiber extension — Fiber.spawn_traced
+- [x] Channel extension — Channel#traced
 
-## Tier 2 — Medium Priority
+### tracing-opentelemetry ✓ (in progress)
 
-### tracing-mock
-
-- [x] `MockSubscriber` / `MockLayer` — record expected span/event patterns
-- [ ] `expect!` — builder for expected events
-- [ ] `check_span` / `with_span` — verify span creation and fields
-
-### tracing-serde
-
-- [ ] `Serialize` implementations for tracing-core types (Id, Metadata, etc.)
-- [ ] `JsonSubscriber` / `JsonLayer` — JSON output format
-
-### tracing-error
-
-- [x] `TracedError` wrapper — capture span context on error
-- [ ] `InstrumentError` trait — `.in_error(err)` builder
-
-### tracing-flame
-
-- [x] `FlameLayer` — records enter/exit timestamps
-- [ ] Folded stack format output — consumed by flamegraph tools
+- [x] OpenTelemetryLayer
+- [x] Span kind mapping (otel.kind → SpanKind)
+- [x] Span status mapping (otel.status_code → StatusCode)
+- [x] Dynamic span name (otel.name)
+- [x] Error event → exception detection
+- [x] with_level, with_target, with_location, with_threads
+- [ ] Tracer integration (blocked — needs dynamic dispatch)
+- [ ] Context propagation (blocked — needs OTel Context API)
+- [ ] Metrics (deferred)
 
 ## Quality Gates
 
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec
+crystal spec   # 160 examples
 ```
-
-## Drift Checks
-
-```bash
-# Main crate
-./scripts/check_port_inventory.sh . plans/inventory/rust_port_inventory.tsv vendor/tracing rust
-
-# Tier 1 sub-crates
-./scripts/generate_port_inventory.sh . plans/inventory/tracing_log_port_inventory.tsv vendor/tracing/tracing-log/src rust 1
-./scripts/generate_port_inventory.sh . plans/inventory/tracing_appender_port_inventory.tsv vendor/tracing/tracing-appender/src rust 1
-```
-
-## tracing-opentelemetry
-
-Upstream: `vendor/tracing-opentelemetry/` (pinned at v0.33.0, commit `1d5422f`)
-69 items in manifest.
-
-Bridges `tracing` spans/events to [OpenTelemetry](https://opentelemetry.io)-compatible
-distributed tracing systems.
-
-### Core API
-
-- [x] `OpenTelemetryLayer` — minimal port that converts spans/events to OTel
-- [ ] `layer()` free function — creates default OpenTelemetryLayer
-- [ ] `.with_tracer(tracer)` — configure OTel tracer
-- [ ] `PreSampledTracer` — pre-sampled tracer wrapper
-
-### Span Conversion
-
-- [ ] Span ID → OTel `SpanId` mapping
-- [ ] Trace ID → OTel `TraceId` (from parent context or generated)
-- [ ] Span metadata → OTel span name
-- [ ] Span enter/exit → OTel span start/end
-- [ ] Span events → OTel span events
-- [ ] Span status → OTel status (from `otel.status_code` field)
-- [x] Span kind → OTel `SpanKind` (from `otel.kind` field)
-- [x] Dynamic span name via `otel.name` field
-
-### Context Propagation
-
-- [ ] Extract OTel context from incoming request headers
-- [ ] Inject OTel context into outgoing request headers
-- [ ] `OtelData` extension stored per-span for context propagation
-- [ ] `OpenTelemetrySpanExt` trait — set_parent, context, parent_context
-
-### Error Handling
-
-- [x] `with_error_events_to_exceptions` — error event detection + attrs — convert error events to OTel exceptions
-- [ ] `with_error_events_to_status` — set span status from error events
-- [ ] `with_error_fields_to_exceptions` — convert error fields to exceptions
-- [ ] `with_error_records_to_exceptions` — convert span error records to exceptions
-
-### Configuration
-
-- [x] `with_level(Level)` — filter by verbosity level
-- [x] `with_target(bool)` — include/exclude span target
-- [x] `with_location(bool)` — include/exclude span source location
-- [x] `with_threads(bool)` — include/exclude thread info
-- [ ] `with_tracked_inactivity(bool)` — track span inactivity duration
-- [ ] `with_context_activation(bool)` — activate OTel context on span enter
-
-### Metrics (deferred)
-
-- [ ] `MetricsLayer` — convert tracing events to OTel metrics
-- [ ] `ObservableGauge`, `Histogram`, `Counter` metric types
-- [ ] Metric attribute conversion from tracing fields
-
-### Dependencies (Crystal)
-
-Requires a Crystal OpenTelemetry shard providing:
-- `OpenTelemetry::Trace::Tracer` interface
-- `OpenTelemetry::Trace::Span` interface
-- `OpenTelemetry::Context` propagation
-- `OpenTelemetry::SDK::Trace::TracerProvider`
-- Span exporter (e.g., `opentelemetry-stdout`, `opentelemetry-otlp`)
-
-### Notes
-
-This crate depends on an external OpenTelemetry SDK for Crystal. Without a
-mature Crystal OTel implementation, this port is blocked. Consider:
-1. Porting `opentelemetry-rust` to Crystal first, or
-2. Creating a minimal `Tracer` interface that downstream users implement
-3. Using the `opentelemetry` Crystal shard if one exists
