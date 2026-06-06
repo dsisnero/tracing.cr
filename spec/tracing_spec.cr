@@ -190,7 +190,7 @@ describe Tracing::Span do
 
   it "enter/exit lifecycle with a subscriber" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       meta = Metadata.new("test_span", "test_target", Level::INFO, kind: Kind::SPAN)
       span = Span.new(meta)
       span.disabled?.should be_false
@@ -226,7 +226,7 @@ end
 describe "Tracing.span (ported from upstream span! macro)" do
   it "creates a span via DSL method" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = Tracing.span(Level::INFO, "my_span", answer: 42)
       s.disabled?.should be_false
       subscriber.new_span_count.should eq(1)
@@ -235,7 +235,7 @@ describe "Tracing.span (ported from upstream span! macro)" do
 
   it "creates a span with parent override" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       parent_id = SpanId.from_u64(99_u64)
       s = Tracing.child_span(parent_id, Level::INFO, "child_span")
       s.disabled?.should be_false
@@ -246,7 +246,7 @@ end
 describe "Tracing.event (ported from upstream event! macro)" do
   it "dispatches an event via DSL method" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.event(Level::INFO, "my_event", key: "value")
       subscriber.event_count.should eq(1)
     end
@@ -260,7 +260,7 @@ end
 describe "Tracing level shorthand methods" do
   it "traces an info event" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.info("info_event", key: "val")
       subscriber.event_count.should eq(1)
       subscriber.last_event_level.should eq(Level::INFO)
@@ -269,7 +269,7 @@ describe "Tracing level shorthand methods" do
 
   it "traces a debug event" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.debug("debug_event")
       subscriber.event_count.should eq(1)
       subscriber.last_event_level.should eq(Level::DEBUG)
@@ -278,7 +278,7 @@ describe "Tracing level shorthand methods" do
 
   it "traces a warn event" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.warn("warn_event")
       subscriber.event_count.should eq(1)
       subscriber.last_event_level.should eq(Level::WARN)
@@ -287,7 +287,7 @@ describe "Tracing level shorthand methods" do
 
   it "traces an error event" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.error("error_event")
       subscriber.event_count.should eq(1)
       subscriber.last_event_level.should eq(Level::ERROR)
@@ -298,7 +298,7 @@ end
 describe "Tracing macros (span!, event!, level macros)" do
   it "span! macro creates a span" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = span!(Level::INFO, "macro_span", answer: 42)
       s.disabled?.should be_false
       subscriber.new_span_count.should eq(1)
@@ -307,7 +307,7 @@ describe "Tracing macros (span!, event!, level macros)" do
 
   it "event! macro dispatches an event" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       event!(Level::INFO, "macro_event", key: "val")
       subscriber.event_count.should eq(1)
     end
@@ -315,7 +315,7 @@ describe "Tracing macros (span!, event!, level macros)" do
 
   it "info! macro dispatches" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("info_macro")
       subscriber.event_count.should eq(1)
       subscriber.last_event_level.should eq(Level::INFO)
@@ -324,7 +324,7 @@ describe "Tracing macros (span!, event!, level macros)" do
 
   it "debug_span! macro creates a span at DEBUG level" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = debug_span!("debug_macro")
       s.disabled?.should be_false
     end
@@ -332,7 +332,7 @@ describe "Tracing macros (span!, event!, level macros)" do
 
   it "span! macro creates span with no fields" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = span!(Level::WARN, "no_fields")
       s.disabled?.should be_false
     end
@@ -479,7 +479,7 @@ describe "LookupSpan (ported from upstream layer/tests.rs)" do
   it "context_event_span returns parent span name" do
     layer = EventSpanLayer.new
     subscriber = Tracing::Registry.new.with(layer)
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("no span")
       layer.observed_name.should be_nil
 
@@ -558,7 +558,7 @@ describe "Filter::LevelFilter (ported from upstream filter/level.rs)" do
     fmt_layer = Tracing::FmtLayer.new(io).with_filter(LevelFilter.info)
     subscriber = Tracing::Registry.new.with(fmt_layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("should pass")
       debug!("should be filtered")
     end
@@ -588,7 +588,7 @@ describe "Extensions integration (per-span data)" do
     layer = SpanDataLayer.new
     registry = Tracing::Registry.new
     subscriber = registry.with(layer)
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("data_span").in_scope do
         info!("event_in_span")
       end
@@ -625,7 +625,7 @@ describe "FmtLayer (ported from upstream fmt/fmt_layer.rs)" do
     fmt_layer = Tracing::FmtLayer.new(io)
     subscriber = Tracing::Registry.new.with(fmt_layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("hello world")
       warn!("something happened")
     end
@@ -640,7 +640,7 @@ describe "FmtLayer (ported from upstream fmt/fmt_layer.rs)" do
     fmt_layer = Tracing::FmtLayer.new(io)
     subscriber = Tracing::Registry.new.with(fmt_layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("my_span").in_scope do
         info!("inside")
       end
@@ -661,7 +661,7 @@ describe "FmtLayer with_filter" do
     fmt_layer = Tracing::FmtLayer.new(io).with_filter(LevelFilter.warn)
     subscriber = Tracing::Registry.new.with(fmt_layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("should be filtered out")
       warn!("should appear")
       error!("should also appear")
@@ -729,7 +729,7 @@ describe "EnvFilter (ported from upstream filter/env)" do
     counting = EventCollector.new
     subscriber = Tracing::Registry.new.with(counting).with(filter)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       error!("pass_error")
       info!("pass_info")
       debug!("filter_debug")
@@ -747,7 +747,7 @@ describe "EnvFilter (ported from upstream filter/env)" do
     counting = EventCollector.new
     subscriber = Tracing::Registry.new.with(counting).with(filter)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.event(Level::DEBUG, "mod_event")
     end
 
@@ -782,7 +782,7 @@ describe "FmtLayer formatting options" do
     layer = Tracing::FmtLayer.new(io).with_target(true)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.event(Level::INFO, "test_event")
     end
 
@@ -795,7 +795,7 @@ describe "FmtLayer formatting options" do
     layer = Tracing::FmtLayer.new(io).with_level(false)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.event(Level::INFO, "test_event")
     end
 
@@ -808,7 +808,7 @@ describe "FmtLayer formatting options" do
     layer = Tracing::FmtLayer.new(io)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       Tracing.event(Level::INFO, "data_event", user: "alice", count: 42)
     end
 
@@ -825,7 +825,7 @@ describe "FmtLayer compact mode" do
     layer = Tracing::FmtLayer.new(io).compact
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("compact_event", key: "val")
     end
 
@@ -843,7 +843,7 @@ describe "FmtLayer compact mode" do
     layer = Tracing::FmtLayer.new(io).compact
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("compact_span").in_scope do
         info!("inside")
       end
@@ -863,7 +863,7 @@ describe "FmtLayer span events configuration" do
     layer = Tracing::FmtLayer.new(io).with_span_events(Tracing::FmtSpan::NEW)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("span_test").in_scope { info!("inside") }
     end
 
@@ -879,7 +879,7 @@ describe "FmtLayer span events configuration" do
     layer = Tracing::FmtLayer.new(io).with_span_events(Tracing::FmtSpan::NONE)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("span_test").in_scope { info!("inside") }
     end
 
@@ -894,7 +894,7 @@ describe "FmtLayer span events configuration" do
     layer = Tracing::FmtLayer.new(io).with_span_events(Tracing::FmtSpan::ACTIVE)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("span_test").in_scope { info!("inside") }
     end
 
@@ -913,7 +913,7 @@ describe "FilterFn (ported from upstream filter/filter_fn.rs)" do
     filtered = counting.with_fn_filter(filter)
     subscriber = Tracing::Registry.new.with(filtered)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       error!("pass")
       info!("blocked")
     end
@@ -928,7 +928,7 @@ describe "FilterFn (ported from upstream filter/filter_fn.rs)" do
     counting = EventCollector.new
     subscriber = subscriber.with(counting)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("always_pass")
     end
 
@@ -1006,7 +1006,7 @@ describe "FmtLayer MakeWriter (ported from upstream fmt/writer.rs)" do
     layer = Tracing::FmtLayer.make_writer { io }
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("writer_test")
     end
 
@@ -1022,7 +1022,7 @@ describe "FmtLayer MakeWriter (ported from upstream fmt/writer.rs)" do
     end
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("first")
       info!("second")
     end
@@ -1039,7 +1039,7 @@ describe "event/span target override" do
     log = EventLog.new
     subscriber = Tracing::Registry.new.with(log)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       span!(Level::INFO, "my_span", target: "span_target")
       info!("my_event", target: "custom_target")
     end
@@ -1086,7 +1086,7 @@ describe "Nil as Layer (Option<Layer> support)" do
     collector = EventCollector.new
     subscriber = registry.with(collector)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("should pass through nil layer")
     end
 
@@ -1100,7 +1100,7 @@ describe "Nil as Layer (Option<Layer> support)" do
     registry = Tracing::Registry.default.with(collector).with(filter_layer)
     subscriber = registry
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       warn!("passes")
       info!("blocked")
     end
@@ -1117,7 +1117,7 @@ describe "FmtLayer pretty mode" do
     layer = Tracing::FmtLayer.new(io).pretty
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("pretty_event", user: "alice", count: 42)
     end
 
@@ -1133,7 +1133,7 @@ describe "FmtLayer pretty mode" do
     layer = Tracing::FmtLayer.new(io).pretty
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info_span!("outer").in_scope do
         info!("inside")
       end
@@ -1152,7 +1152,7 @@ describe "FmtLayer with_ansi" do
     layer = Tracing::FmtLayer.new(io).with_ansi(true)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       error!("ansi_error")
     end
 
@@ -1166,7 +1166,7 @@ describe "FmtLayer with_ansi" do
     layer = Tracing::FmtLayer.new(io).with_ansi(false)
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("no_ansi")
     end
 
@@ -1214,7 +1214,7 @@ describe "Layer#and_then combinator" do
     composed = inner.and_then(filter)
     subscriber = Tracing::Registry.new.with(composed)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       error!("pass")
       info!("block")
     end
@@ -1239,7 +1239,7 @@ describe "Span field recording (ported from upstream span.rs)" do
     log = SpanRecordLog.new
     subscriber = Tracing::Registry.new.with(log)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = span!(Level::INFO, "record_span", initial: 1)
       s.record(key: "value")
     end
@@ -1277,7 +1277,7 @@ describe "trace_dbg! macro (ported from tracing-macros/src/lib.rs)" do
     log = EventCollector.new
     subscriber = Tracing::Registry.new.with(log)
 
-    result = Dispatch.with_default(Dispatch.new(subscriber)) do
+    result = Dispatch.with_default(Dispatch.new(registry)) do
       trace_dbg!(42)
     end
 
@@ -1289,7 +1289,7 @@ describe "trace_dbg! macro (ported from tracing-macros/src/lib.rs)" do
     log = EventCollector.new
     subscriber = Tracing::Registry.new.with(log)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       trace_dbg!(2 + 2)
     end
 
@@ -1488,7 +1488,7 @@ describe "Tracing.instrument (ported from tracing-attributes)" do
     observer = SpanObserver.new
     subscriber = Tracing::Registry.new.with(observer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       result = Tracing.instrument("my_func", arg: 42) { 100 }
       result.should eq(100)
     end
@@ -1632,7 +1632,7 @@ describe "FmtLayer JSON mode (ported from tracing-serde)" do
     layer = Tracing::FmtLayer.new(io).json
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("json_event", user: "alice", count: 42)
     end
 
@@ -1650,7 +1650,7 @@ describe "FmtLayer JSON mode (ported from tracing-serde)" do
     layer = Tracing::FmtLayer.new(io).json
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("timed_event")
     end
 
@@ -1743,7 +1743,7 @@ describe "FmtLayer JSON typed values" do
     layer = Tracing::FmtLayer.new(io).json
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("int_event", count: 42_i64, size: 100_u64)
     end
 
@@ -1760,7 +1760,7 @@ describe "FmtLayer JSON typed values" do
     layer = Tracing::FmtLayer.new(io).json
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("bool_event", active: true, done: false)
     end
 
@@ -1774,7 +1774,7 @@ describe "FmtLayer JSON typed values" do
     layer = Tracing::FmtLayer.new(io).json
     subscriber = Tracing::Registry.new.with(layer)
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       info!("float_event", ratio: 0.5_f64)
     end
 
@@ -1809,7 +1809,7 @@ describe "Span#follows_from" do
     cause_id = nil
     effect_id = nil
 
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       a = span!(Level::INFO, "cause")
       b = span!(Level::INFO, "effect")
       cause_id = a.id
@@ -1835,7 +1835,7 @@ end
 describe "Span.current" do
   it "returns disabled span when no span is entered" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = Span.current
       s.disabled?.should be_true
     end
@@ -1854,7 +1854,7 @@ describe "Span.current" do
 
   it "or_current returns self when enabled" do
     subscriber = TestSubscriber.new
-    Dispatch.with_default(Dispatch.new(subscriber)) do
+    Dispatch.with_default(Dispatch.new(registry)) do
       s = span!(Level::INFO, "enabled_span")
       s2 = s.or_current
       s2.id.should eq(s.id)
@@ -1902,5 +1902,22 @@ describe "Targets.with_targets" do
 
     meta3 = Metadata.new("ev", "alpha::module", Level::WARN)
     filter.enabled?(meta3, ctx).should be_false
+  end
+end
+
+
+describe "EnvFilter span-name matching" do
+  it "filters with filter outermost" do
+    filter = Tracing::EnvFilter.new("error")
+    counting = EventCollector.new
+    subscriber = Tracing::Registry.new.with(counting).with(filter)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("pass_error")
+      info!("block_info")
+    end
+
+    counting.names.should contain("pass_error")
+    counting.names.should_not contain("block_info")
   end
 end

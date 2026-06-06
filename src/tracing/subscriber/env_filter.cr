@@ -62,7 +62,22 @@ module Tracing
     end
 
     def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
-      @directives.any? { |directive| directive_matches?(directive, metadata) }
+      @directives.any? { |d| directive_matches?(d, metadata, ctx) }
+    end
+
+    private def directive_matches?(d : Directive, meta : Metadata, ctx : LayerContext) : Bool
+      if target = d.target
+        return false unless meta.target.starts_with?(target)
+      end
+      if span_name = d.in_span
+        if registry = ctx.subscriber.as?(Registry)
+          current = registry.current_span_id
+          return false unless current
+          data = registry.span_data(current)
+          return false unless data && data.name == span_name
+        end
+      end
+      meta.level <= d.level
     end
 
     def max_level_hint : LevelFilter?
