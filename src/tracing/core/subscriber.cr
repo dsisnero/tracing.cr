@@ -18,6 +18,17 @@ module Tracing
       def current_span : Span::Current
         Span::Current.unknown
       end
+
+      def clone_span(id : Span::Id) : Span::Id
+        id
+      end
+
+      def drop_span(id : Span::Id) : Nil
+      end
+
+      def try_close(id : Span::Id) : Bool
+        false
+      end
     end
 
     class NoSubscriber

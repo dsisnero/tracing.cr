@@ -1873,3 +1873,15 @@ describe "Span.current" do
     end
   end
 end
+
+describe "Dispatch.has_been_set" do
+  it "returns true after set_global_default" do
+    begin
+      sub = Tracing::Registry.new
+      Tracing::Subscriber.set_global_default(sub)
+      Dispatch.has_been_set?.should be_true
+    rescue ex : Tracing::Core::SetGlobalDefaultError
+      Dispatch.has_been_set?.should be_true
+    end
+  end
+end

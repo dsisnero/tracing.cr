@@ -88,6 +88,10 @@ module Tracing
         @@global_init.get(:sequentially_consistent) == INITIALIZED ? @@global_dispatch : nil
       end
 
+      def self.has_been_set? : Bool
+        @@global_init.get(:acquire) == INITIALIZED
+      end
+
       def self.try_close : Bool
         return false if @@global_init.get(:acquire) == INITIALIZED
         @@global_init.compare_and_set(UNINITIALIZED, INITIALIZING, :acquire_release, :acquire)
@@ -158,6 +162,18 @@ module Tracing
       end
 
       def on_register_dispatch : Nil
+      end
+
+      def clone_span(id : Core::Span::Id) : Core::Span::Id
+        @subscriber.try(&.clone_span(id)) || id
+      end
+
+      def drop_span(id : Core::Span::Id) : Nil
+        @subscriber.try(&.drop_span(id))
+      end
+
+      def try_close(id : Core::Span::Id) : Bool
+        @subscriber.try(&.try_close(id)) || false
       end
 
       private UNINITIALIZED = 0_u8
