@@ -1885,3 +1885,22 @@ describe "Dispatch.has_been_set" do
     end
   end
 end
+
+describe "Targets.with_targets" do
+  it "accepts an array of target-level pairs" do
+    filter = Tracing::Targets.new.with_targets([
+      {"alpha", Level::ERROR},
+      {"beta", LevelFilter.debug},
+    ]).with_default(LevelFilter.off)
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+
+    meta = Metadata.new("ev", "alpha::module", Level::ERROR)
+    filter.enabled?(meta, ctx).should be_true
+
+    meta2 = Metadata.new("ev", "beta::module", Level::DEBUG)
+    filter.enabled?(meta2, ctx).should be_true
+
+    meta3 = Metadata.new("ev", "alpha::module", Level::WARN)
+    filter.enabled?(meta3, ctx).should be_false
+  end
+end

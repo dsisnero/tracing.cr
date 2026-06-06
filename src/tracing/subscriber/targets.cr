@@ -23,6 +23,26 @@ module Tracing
       self
     end
 
+    def with_targets(pairs : Enumerable({String, Level}) | Enumerable({String, LevelFilter})) : self
+      pairs.each do |target, level|
+        case level
+        in Level       then with_target(target, level)
+        in LevelFilter then with_target(target, level)
+        end
+      end
+      self
+    end
+
+    def with_targets(pairs : Enumerable({String, (Level | LevelFilter)})) : self
+      pairs.each do |target, level|
+        case level
+        in Level       then with_target(target, level)
+        in LevelFilter then with_target(target, level)
+        end
+      end
+      self
+    end
+
     def with_default(level : LevelFilter) : self
       @default_level = level
       self
