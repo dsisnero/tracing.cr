@@ -17,7 +17,16 @@ module Tracing
     end
 
     # Builder-style constructor.
-    def self.builder(io : IO, *, buffer_size : Int32 = DEFAULT_BUFFER_SIZE) : {NonBlocking, WorkerGuard}
+    #
+    # Options:
+    #   buffer_size: channel buffer capacity (default: 128_000)
+    #   lossy: drop messages when buffer is full (default: false, backpressure)
+    #
+    # NOTE: lossy mode is a placeholder — Crystal's Channel supports
+    # only blocking send. In non-lossy mode (default), send blocks until
+    # the worker drains the buffer. Lossy will be implemented when
+    # Crystal adds non-blocking Channel send.
+    def self.builder(io : IO, *, buffer_size : Int32 = DEFAULT_BUFFER_SIZE, lossy : Bool = false) : {NonBlocking, WorkerGuard}
       channel = Channel(Bytes).new(buffer_size)
       done = Channel(Nil).new
 
