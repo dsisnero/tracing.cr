@@ -1920,3 +1920,32 @@ describe "EnvFilter span-name matching" do
     counting.names.should_not contain("block_info")
   end
 end
+
+# Ported from upstream registry span lifecycle
+describe "Registry span lifecycle" do
+  it "clones and closes spans with ref counting" do
+    registry = Tracing::Registry.new
+    id = nil
+
+    Dispatch.with_default(Dispatch.new(registry)) do
+      s = span!(Level::INFO, "lifecycle_span")
+      id = s.id.not_nil!
+      data = registry.span_data(id)
+      data.should_not be_nil
+      data.try(&.ref_count).should eq(1)
+
+      # Clone increments ref count
+      cloned_id = Dispatch.current.not_nil!.clone_span(id)
+      data = registry.span_data(id)
+      data.try(&.ref_count).should eq(2)
+
+      # try_close decrements, returns false while handles exist
+      Dispatch.current.not_nil!.try_close(cloned_id).should be_false
+      data = registry.span_data(id)
+      data.try(&.ref_count).should eq(1)
+
+      # Last handle closes the span
+      Dispatch.current.not_nil!.try_close(id).should be_true
+    end
+  end
+end
