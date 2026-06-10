@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 160 specs across 13 sub-crates.**
+**Total: 166 specs across 13 sub-crates.**
 
 ## Done (core)
 
@@ -76,8 +76,14 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] SpanTrace
 - [x] LogTracer (Crystal Log bridge)
 - [x] NonBlocking + WorkerGuard
+- [x] NonBlocking.lossy parameter (placeholder)
 - [x] RollingFileAppender + Rotation enum
 - [x] FlameLayer + folded stack output
+- [x] Registry#clone_span + try_close (span lifecycle)
+- [x] Targets.with_targets(Enumerable) — batch config
+- [x] EnvFilter span-name matching (target[span]=level)
+- [x] Dispatch.has_been_set?, clone_span, drop_span, try_close
+- [x] Span#or_current — return self or current span
 
 ## Done (sub-crates)
 
