@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 193 specs across 13 sub-crates.**
+**Total: 198 specs across 13 sub-crates.**
 
 ## Done (core)
 
@@ -85,6 +85,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Targets.with_targets(Enumerable) — batch config
 - [x] Targets.parse (FromStr) — `target=level` directives, numeric/uppercase/mixed levels
 - [x] Targets#to_s (Display) + parse round-trip, #default_level (Option), #iter, #would_enable
+- [x] Reload (reload::Layer) + Handle — runtime-swappable inner layer (reload/modify/with_current/handle)
 - [x] EnvFilter span-name matching (target[span]=level)
 - [x] Dispatch.has_been_set?, clone_span, drop_span, try_close
 - [x] Span#or_current — return self or current span
@@ -147,5 +148,5 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 193 examples
+crystal spec   # 198 examples
 ```

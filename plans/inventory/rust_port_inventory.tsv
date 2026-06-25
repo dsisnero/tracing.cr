@@ -974,18 +974,18 @@ tracing-subscriber/src/registry/sharded.rs::test::spans_are_only_closed_when_the
 tracing-subscriber/src/registry/sharded.rs::test::spans_are_removed_from_registry	test	missing	-	auto-generated
 tracing-subscriber/src/registry/stack.rs::test::pop_first_span	test	missing	-	auto-generated
 tracing-subscriber/src/registry/stack.rs::test::pop_last_span	test	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::clone_current	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::handle	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::is_dropped	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::is_poisoned	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::modify	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::new	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::func::reload	func	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::method::Handle.reload	method	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::method::Layer.new	method	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::struct::Error	struct	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::struct::Handle	struct	missing	-	auto-generated
-tracing-subscriber/src/reload.rs::struct::Layer	struct	missing	-	auto-generated
+tracing-subscriber/src/reload.rs::func::clone_current	func	skipped	-	requires Clone; Crystal layers not cloneable, use with_current
+tracing-subscriber/src/reload.rs::func::handle	func	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::func::is_dropped	func	skipped	-	Rust weak-ref SubscriberGone; no Crystal equivalent
+tracing-subscriber/src/reload.rs::func::is_poisoned	func	skipped	-	Rust lock poisoning; no Crystal equivalent
+tracing-subscriber/src/reload.rs::func::modify	func	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::func::new	func	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::func::reload	func	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::method::Handle.reload	method	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::method::Layer.new	method	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::struct::Error	struct	skipped	-	Rust lock-poison/weak-ref error; no Crystal equivalent
+tracing-subscriber/src/reload.rs::struct::Handle	struct	ported	src/tracing/subscriber/reload.cr	-
+tracing-subscriber/src/reload.rs::struct::Layer	struct	ported	src/tracing/subscriber/reload.cr	ported as Tracing::Reload
 tracing-subscriber/src/util.rs::struct::TryInitError	struct	missing	-	auto-generated
 tracing-subscriber/src/util.rs::trait::SubscriberInitExt	trait	missing	-	auto-generated
 tracing-subscriber/tests/ansi_escaping.rs::test::ansi_sanitization_prevents_injection	test	missing	-	auto-generated
