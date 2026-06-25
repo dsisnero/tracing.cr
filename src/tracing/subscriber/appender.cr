@@ -28,7 +28,7 @@ module Tracing
     # Crystal adds non-blocking Channel send.
     def self.builder(io : IO, *, buffer_size : Int32 = DEFAULT_BUFFER_SIZE, lossy : Bool = false) : {NonBlocking, WorkerGuard}
       channel = Channel(Bytes).new(buffer_size)
-      done = Channel(Nil).new
+      done = Channel(Bool).new
 
       spawn(name: "tracing-appender-worker") do
         loop do
@@ -44,7 +44,7 @@ module Tracing
             break
           end
         end
-        done.send(nil)
+        done.send(true)
       end
 
       Fiber.yield
@@ -84,12 +84,21 @@ module Tracing
   # Must be held in a variable (not `_`) to prevent immediate drop.
   class WorkerGuard
     @sender : Channel(Bytes)
-    @done : Channel(Nil)
+    @done : Channel(Bool)
+    @closed = Atomic(Bool).new(false)
 
-    def initialize(@sender : Channel(Bytes), @done : Channel(Nil))
+    def initialize(@sender : Channel(Bytes), @done : Channel(Bool))
     end
 
+    # Flush buffered data and shut down the worker fiber.
+    #
+    # Idempotent: only the first call closes the sender and waits for
+    # the worker to drain. Subsequent calls (including the one issued
+    # by `finalize` during GC) are no-ops, so they cannot deadlock on
+    # `@done.receive` after the worker fiber has already terminated.
     def close : Nil
+      _, succeeded = @closed.compare_and_set(false, true)
+      return unless succeeded
       @sender.close
       @done.receive
     end
