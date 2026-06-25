@@ -688,10 +688,10 @@ tracing-subscriber/src/fmt/fmt_layer.rs::func::with_line_number	func	missing	-	a
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_span_events	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_span_list	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_target	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/fmt_layer.rs::func::with_test_writer	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/fmt_layer.rs::func::with_test_writer	func	ported	src/tracing/subscriber/fmt.cr	FmtLayer#with_test_writer (instance + class method)
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_thread_ids	func	ported	src/tracing/subscriber/fmt.cr	FmtLayer#with_thread_ids (fiber id)
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_thread_names	func	ported	src/tracing/subscriber/fmt.cr	FmtLayer#with_thread_names (fiber name)
-tracing-subscriber/src/fmt/fmt_layer.rs::func::without_time	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/fmt_layer.rs::func::without_time	func	ported	src/tracing/subscriber/fmt.cr	FmtLayer#without_time
 tracing-subscriber/src/fmt/fmt_layer.rs::func::writer	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::writer_mut	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::method::FormattedFields.new	method	missing	-	auto-generated
@@ -807,36 +807,36 @@ tracing-subscriber/src/fmt/mod.rs::func::builder	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::compact	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::finish	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::flatten_event	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::fmt	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::init	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::json	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::fmt	func	ported	src/tracing.cr	Tracing.fmt → FmtSubscriberBuilder
+tracing-subscriber/src/fmt/mod.rs::func::init	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#init
+tracing-subscriber/src/fmt/mod.rs::func::json	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#json
 tracing-subscriber/src/fmt/mod.rs::func::log_internal_errors	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::new	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::pretty	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::reload_handle	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::try_init	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_ansi	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::try_init	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#try_init
+tracing-subscriber/src/fmt/mod.rs::func::with_ansi	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#with_ansi
 tracing-subscriber/src/fmt/mod.rs::func::with_current_span	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::with_env_filter	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::with_file	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::with_filter_reloading	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_level	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::with_level	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#with_level (delegates)
 tracing-subscriber/src/fmt/mod.rs::func::with_line_number	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_max_level	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_span_events	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::with_max_level	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#with_max_level
+tracing-subscriber/src/fmt/mod.rs::func::with_span_events	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#with_span_events
 tracing-subscriber/src/fmt/mod.rs::func::with_span_list	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_target	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::with_target	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#with_target
 tracing-subscriber/src/fmt/mod.rs::func::with_test_writer	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::with_thread_ids	func	ported	src/tracing/subscriber/fmt.cr	collapsed into FmtLayer
 tracing-subscriber/src/fmt/mod.rs::func::with_thread_names	func	ported	src/tracing/subscriber/fmt.cr	collapsed into FmtLayer
-tracing-subscriber/src/fmt/mod.rs::func::without_time	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::method::Subscriber.builder	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::method::SubscriberBuilder.finish	method	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::without_time	func	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#without_time
+tracing-subscriber/src/fmt/mod.rs::method::Subscriber.builder	method	ported	src/tracing.cr	Tracing.fmt (returns builder)
+tracing-subscriber/src/fmt/mod.rs::method::SubscriberBuilder.finish	method	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder#finish
 tracing-subscriber/src/fmt/mod.rs::method::SubscriberBuilder.flatten_event	method	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::method::SubscriberBuilder.reload_handle	method	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::method::SubscriberBuilder.with_filter_reloading	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::struct::Subscriber	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::struct::SubscriberBuilder	struct	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::struct::Subscriber	struct	skipped	-	FmtSubscriberBuilder#finish returns Layered(Layered(Registry))
+tracing-subscriber/src/fmt/mod.rs::struct::SubscriberBuilder	struct	ported	src/tracing/subscriber/fmt_builder.cr	FmtSubscriberBuilder
 tracing-subscriber/src/fmt/mod.rs::test::impls	test	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::test::is_lookup_span	test	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::test::subscriber_downcasts	test	missing	-	auto-generated
@@ -876,20 +876,20 @@ tracing-subscriber/src/fmt/writer.rs::func::none	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::func::some	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::func::with_stderr	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::method::OptionalWriter.none	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::method::Tee.new	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::method::TestWriter.new	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::method::WithFilter.new	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::method::WithMaxLevel.new	method	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::method::WithMinLevel.new	method	missing	-	auto-generated
+tracing-subscriber/src/fmt/writer.rs::method::Tee.new	method	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::Tee#initialize
+tracing-subscriber/src/fmt/writer.rs::method::TestWriter.new	method	ported	src/tracing/subscriber/fmt/writer.cr	TestWriter#initialize
+tracing-subscriber/src/fmt/writer.rs::method::WithFilter.new	method	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::WithFilter#initialize
+tracing-subscriber/src/fmt/writer.rs::method::WithMaxLevel.new	method	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::WithMaxLevel#initialize
+tracing-subscriber/src/fmt/writer.rs::method::WithMinLevel.new	method	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::WithMinLevel#initialize
 tracing-subscriber/src/fmt/writer.rs::struct::ArcWriter	struct	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::struct::BoxMakeWriter	struct	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::struct::MutexGuardWriter	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::struct::OrElse	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::struct::Tee	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::struct::TestWriter	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::struct::WithFilter	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::struct::WithMaxLevel	struct	missing	-	auto-generated
-tracing-subscriber/src/fmt/writer.rs::struct::WithMinLevel	struct	missing	-	auto-generated
+tracing-subscriber/src/fmt/writer.rs::struct::OrElse	struct	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::OrElse < MakeWriter
+tracing-subscriber/src/fmt/writer.rs::struct::Tee	struct	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::Tee < MakeWriter
+tracing-subscriber/src/fmt/writer.rs::struct::TestWriter	struct	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::TestWriter < IO
+tracing-subscriber/src/fmt/writer.rs::struct::WithFilter	struct	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::WithFilter < MakeWriter
+tracing-subscriber/src/fmt/writer.rs::struct::WithMaxLevel	struct	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::WithMaxLevel < MakeWriter
+tracing-subscriber/src/fmt/writer.rs::struct::WithMinLevel	struct	ported	src/tracing/subscriber/fmt/writer.cr	FmtWriter::WithMinLevel < MakeWriter
 tracing-subscriber/src/fmt/writer.rs::test::combinators_and	test	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::test::combinators_level_filters	test	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::test::combinators_or_else	test	missing	-	auto-generated

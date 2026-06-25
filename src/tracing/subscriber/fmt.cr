@@ -1,4 +1,5 @@
 require "json"
+require "./fmt/writer"
 
 module Tracing
   # Controls which span lifecycle events the FmtLayer displays.
@@ -26,7 +27,8 @@ module Tracing
     @pretty_mode : Bool
     @json_mode : Bool
     @span_events : FmtSpan
-    @make_writer : (-> IO)?
+    @make_writer_block : (-> IO)?
+    @make_writer_obj : FmtWriter::MakeWriter?
     @use_ansi : Bool
     @timer : FmtTime::FormatTime?
     @show_thread_ids : Bool
@@ -41,7 +43,8 @@ module Tracing
       @pretty_mode = false
       @json_mode = false
       @span_events = FmtSpan::FULL
-      @make_writer = nil
+      @make_writer_block = nil
+      @make_writer_obj = nil
       @use_ansi = false
       @timer = FmtTime.time
       @show_thread_ids = false
@@ -78,8 +81,19 @@ module Tracing
       layer
     end
 
+    def self.with_test_writer : self
+      layer = new
+      layer.writer_block = -> { FmtWriter::TestWriter.new.as(IO) }
+      layer
+    end
+
     def writer_block=(writer : (-> IO)?) : Nil
-      @make_writer = writer
+      @make_writer_block = writer
+    end
+
+    def with_make_writer(mw : FmtWriter::MakeWriter) : self
+      @make_writer_obj = mw
+      self
     end
 
     private def write_json_event(io : IO, event : Core::Event, ctx : LayerContext) : Nil
@@ -128,8 +142,10 @@ module Tracing
       io << "\n"
     end
 
-    private def resolve_io : IO
-      if writer = @make_writer
+    private def resolve_io(meta : Metadata? = nil) : IO
+      if mw = @make_writer_obj
+        mw.make_writer(meta)
+      elsif writer = @make_writer_block
         writer.call
       else
         @io
@@ -175,9 +191,18 @@ module Tracing
       self
     end
 
+    def with_test_writer : self
+      @make_writer_block = -> { FmtWriter::TestWriter.new.as(IO) }
+      self
+    end
+
     def with_none_timer : self
       @timer = nil
       self
+    end
+
+    def without_time : self
+      with_none_timer
     end
 
     private def write_timestamp(io : IO) : Nil
@@ -237,7 +262,7 @@ module Tracing
     end
 
     def on_event(event : Core::Event, ctx : LayerContext) : Nil
-      io = resolve_io
+      io = resolve_io(event.metadata)
 
       if @json_mode
         write_json_event(io, event, ctx)

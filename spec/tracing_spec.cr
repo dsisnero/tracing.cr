@@ -2025,3 +2025,438 @@ describe "Registry span lifecycle" do
     end
   end
 end
+
+# RED tests — FmtLayer without_time
+describe "FmtLayer without_time" do
+  it "includes timestamp by default" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("with_time_event")
+    end
+
+    output = io.to_s
+    output.should match(/^\d{4}-\d{2}-\d{2}T/)
+  end
+
+  it "omits timestamp after without_time" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).without_time
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("no_time_event")
+    end
+
+    output = io.to_s
+    output.should_not match(/^\d{4}-\d{2}-\d{2}T/)
+    output.should contain("no_time_event")
+  end
+end
+
+# RED tests — TestWriter + with_test_writer
+describe "TestWriter" do
+  it "is an IO type" do
+    writer = Tracing::FmtWriter::TestWriter.new
+    writer.should be_a(IO)
+  end
+
+  it "accepts written bytes" do
+    writer = Tracing::FmtWriter::TestWriter.new
+    writer.print("hello test")
+    writer.close
+  end
+
+  it "with_test_writer creates a working FmtLayer" do
+    layer = Tracing::FmtLayer.with_test_writer
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("test_writer_event")
+    end
+    # Output goes to STDOUT (captured by spec runner); just ensure no error
+  end
+end
+
+# RED tests — MakeWriter infrastructure (ported from upstream fmt/writer.rs)
+describe "FmtWriter::MakeWriter" do
+  it "Proc wraps a block returning IO" do
+    io = IO::Memory.new
+    mw = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    result = mw.make_writer(nil)
+    result.should be(io)
+  end
+
+  it "Proc returns a fresh IO each call" do
+    outputs = [] of IO::Memory
+    mw = Tracing::FmtWriter::MakeWriter::Proc.new do
+      io = IO::Memory.new
+      outputs << io
+      io
+    end
+    mw.make_writer(nil)
+    mw.make_writer(nil)
+    outputs.size.should eq(2)
+  end
+end
+
+describe "FmtWriter::NoopWriter" do
+  it "accepts writes without error (dev/null)" do
+    w = Tracing::FmtWriter::NoopWriter.new
+    w.write("hello world".to_slice)
+    w.close
+  end
+end
+
+describe "FmtWriter::WithMaxLevel" do
+  it "passes events at or below max level" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMaxLevel.new(inner, Level::INFO)
+
+    meta = Metadata.new("ev", "test", Level::ERROR)
+    result = mw.make_writer(meta)
+    result.should be(io)
+  end
+
+  it "passes events exactly at max level" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMaxLevel.new(inner, Level::INFO)
+
+    meta = Metadata.new("ev", "test", Level::INFO)
+    result = mw.make_writer(meta)
+    result.should be(io)
+  end
+
+  it "discards events above max level (too verbose)" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMaxLevel.new(inner, Level::INFO)
+
+    meta = Metadata.new("ev", "test", Level::DEBUG)
+    result = mw.make_writer(meta)
+    result.should be_a(Tracing::FmtWriter::NoopWriter)
+  end
+
+  it "returns noop when no metadata provided" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMaxLevel.new(inner, Level::INFO)
+
+    result = mw.make_writer(nil)
+    result.should be_a(Tracing::FmtWriter::NoopWriter)
+  end
+end
+
+# RED tests — MakeWriter combinator integration via FmtLayer
+describe "FmtLayer with MakeWriter with_max_level" do
+  it "routes events based on level" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMaxLevel.new(inner, Level::INFO)
+
+    layer = Tracing::FmtLayer.new(STDOUT).with_make_writer(mw).without_time
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("should_write")
+      info!("should_write_too")
+      debug!("should_be_discarded")
+      trace!("should_be_discarded_trace")
+    end
+
+    output = io.to_s
+    output.should contain("should_write")
+    output.should contain("should_write_too")
+    output.should_not contain("should_be_discarded")
+    output.should_not contain("should_be_discarded_trace")
+  end
+end
+
+# RED tests — WithMinLevel combinator
+describe "FmtWriter::WithMinLevel" do
+  it "passes events at or above min level" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMinLevel.new(inner, Level::INFO)
+
+    meta = Metadata.new("ev", "test", Level::TRACE)
+    result = mw.make_writer(meta)
+    result.should be(io)
+  end
+
+  it "passes events exactly at min level" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMinLevel.new(inner, Level::INFO)
+
+    meta = Metadata.new("ev", "test", Level::INFO)
+    result = mw.make_writer(meta)
+    result.should be(io)
+  end
+
+  it "discards events below min level (not verbose enough)" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMinLevel.new(inner, Level::INFO)
+
+    meta = Metadata.new("ev", "test", Level::WARN)
+    result = mw.make_writer(meta)
+    result.should be_a(Tracing::FmtWriter::NoopWriter)
+  end
+
+  it "returns noop when no metadata provided" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithMinLevel.new(inner, Level::INFO)
+
+    result = mw.make_writer(nil)
+    result.should be_a(Tracing::FmtWriter::NoopWriter)
+  end
+end
+
+# RED tests — WithFilter combinator
+describe "FmtWriter::WithFilter" do
+  it "passes events when filter returns true" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithFilter.new(inner, ->(_meta : Tracing::Metadata) { true })
+
+    meta = Metadata.new("ev", "test", Level::INFO)
+    result = mw.make_writer(meta)
+    result.should be(io)
+  end
+
+  it "discards events when filter returns false" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithFilter.new(inner, ->(_meta : Tracing::Metadata) { false })
+
+    meta = Metadata.new("ev", "test", Level::INFO)
+    result = mw.make_writer(meta)
+    result.should be_a(Tracing::FmtWriter::NoopWriter)
+  end
+
+  it "passes make_writer(nil) through to inner" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    mw = Tracing::FmtWriter::WithFilter.new(inner, ->(_meta : Tracing::Metadata) { true })
+
+    result = mw.make_writer(nil)
+    result.should be(io)
+  end
+end
+
+# RED tests — Tee combinator (writes to both)
+describe "FmtWriter::Tee" do
+  it "writes to both inner MakeWriters" do
+    io1 = IO::Memory.new
+    io2 = IO::Memory.new
+    a = Tracing::FmtWriter::MakeWriter::Proc.new { io1 }
+    b = Tracing::FmtWriter::MakeWriter::Proc.new { io2 }
+    tee = Tracing::FmtWriter::Tee.new(a, b)
+
+    meta = Metadata.new("ev", "test", Level::INFO)
+    writer = tee.make_writer(meta)
+    writer.should be_a(Tracing::FmtWriter::TeeWriter)
+    writer.write("hello".to_slice)
+    writer.close
+
+    io1.to_s.should eq("hello")
+    io2.to_s.should eq("hello")
+  end
+end
+
+# RED tests — OrElse combinator
+describe "FmtWriter::OrElse" do
+  it "falls through to or_else when inner returns NoopWriter" do
+    io = IO::Memory.new
+    inner = Tracing::FmtWriter::WithMaxLevel.new(
+      Tracing::FmtWriter::MakeWriter::Proc.new { IO::Memory.new },
+      Level::INFO
+    )
+    fallback = Tracing::FmtWriter::MakeWriter::Proc.new { io }
+    or_else = Tracing::FmtWriter::OrElse.new(inner, fallback)
+
+    # DEBUG > INFO, so WithMaxLevel returns NoopWriter -> or_else delegates to fallback
+    meta = Metadata.new("ev", "test", Level::DEBUG)
+    result = or_else.make_writer(meta)
+    result.should be(io)
+  end
+
+  it "uses inner writer when it returns a real writer" do
+    io1 = IO::Memory.new
+    io2 = IO::Memory.new
+    inner = Tracing::FmtWriter::MakeWriter::Proc.new { io1 }
+    fallback = Tracing::FmtWriter::MakeWriter::Proc.new { io2 }
+    or_else = Tracing::FmtWriter::OrElse.new(inner, fallback)
+
+    meta = Metadata.new("ev", "test", Level::INFO)
+    result = or_else.make_writer(meta)
+    result.should be(io1)
+  end
+end
+
+# RED tests — level-filter chaining (ported from upstream writer.rs)
+describe "MakeWriter combinators level filter chain" do
+  it "routes events to the correct writer based on level" do
+    info_io = IO::Memory.new
+    debug_io = IO::Memory.new
+    warn_io = IO::Memory.new
+    err_io = IO::Memory.new
+
+    info_mw = Tracing::FmtWriter::MakeWriter::Proc.new { info_io }
+    debug_mw = Tracing::FmtWriter::MakeWriter::Proc.new { debug_io }
+    warn_mw = Tracing::FmtWriter::MakeWriter::Proc.new { warn_io }
+    err_mw = Tracing::FmtWriter::MakeWriter::Proc.new { err_io }
+
+    # Ported from upstream combinators_level_filters test:
+    # info.with_max_level(INFO) -> only INFO, WARN, ERROR
+    # debug.with_max_level(DEBUG) -> only INFO, WARN, ERROR, DEBUG
+    # etc.
+    # Combined with Tee, each writer gets events at or below its max level
+    make_writer = Tracing::FmtWriter::Tee.new(
+      Tracing::FmtWriter::WithMaxLevel.new(info_mw, Level::INFO),
+      Tracing::FmtWriter::WithMaxLevel.new(debug_mw, Level::DEBUG)
+    )
+    make_writer = Tracing::FmtWriter::Tee.new(make_writer,
+      Tracing::FmtWriter::WithMaxLevel.new(warn_mw, Level::WARN))
+    make_writer = Tracing::FmtWriter::Tee.new(make_writer,
+      Tracing::FmtWriter::WithMaxLevel.new(err_mw, Level::ERROR))
+
+    layer = Tracing::FmtLayer.new(STDOUT).with_make_writer(make_writer).without_time
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      trace!("t")
+      debug!("d")
+      info!("i")
+      warn!("w")
+      error!("e")
+    end
+
+    # INFO writer: gets ERROR, WARN, INFO (levels <= INFO)
+    info_io.to_s.should contain("e")
+    info_io.to_s.should contain("w")
+    info_io.to_s.should contain("i")
+    info_io.to_s.should_not contain("d")
+    info_io.to_s.should_not contain("t")
+
+    # DEBUG writer: gets ERROR, WARN, INFO, DEBUG (levels <= DEBUG)
+    debug_io.to_s.should contain("e")
+    debug_io.to_s.should contain("w")
+    debug_io.to_s.should contain("i")
+    debug_io.to_s.should contain("d")
+    debug_io.to_s.should_not contain("t")
+  end
+end
+
+# RED tests — fmt() SubscriberBuilder (ported from upstream fmt/mod.rs)
+describe "Tracing.fmt SubscriberBuilder" do
+  it "fmt() returns a builder" do
+    builder = Tracing.fmt
+    builder.should be_a(Tracing::FmtSubscriberBuilder)
+  end
+
+  it "finish returns a subscriber that implements Subscriber" do
+    subscriber = Tracing.fmt.finish
+    subscriber.should be_a(Tracing::Core::Subscriber)
+  end
+
+  it "builder configures and finishes a subscriber that writes output" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .with_target(false)
+      .with_level(false)
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("builder_test")
+    end
+
+    io.to_s.should contain("builder_test")
+  end
+
+  it "builder supports compact mode (delegates to FmtLayer)" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .compact
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("compact_test")
+    end
+
+    io.to_s.should contain("compact_test")
+  end
+
+  it "builder supports json mode (delegates to FmtLayer)" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .json
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("json_test")
+    end
+
+    output = io.to_s.strip
+    JSON.parse(output)["name"].should eq("json_test")
+  end
+
+  it "builder with_max_level sets the default level filter" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .with_max_level(LevelFilter.error)
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("should_appear")
+      info!("should_not_appear")
+    end
+
+    io.to_s.should contain("should_appear")
+    io.to_s.should_not contain("should_not_appear")
+  end
+
+  it "builder delegates with_thread_ids" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .with_thread_ids(true)
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("thread_id_test")
+    end
+
+    io.to_s.should contain(Fiber.current.object_id.to_s)
+  end
+
+  it "builder delegates with_ansi" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .with_ansi(true)
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("ansi_test")
+    end
+
+    io.to_s.should contain("\e[")
+  end
+end

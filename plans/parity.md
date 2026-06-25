@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 223 specs across 13 sub-crates.**
+**Total: 255 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -95,6 +95,19 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] EnvFilter span-name matching (target[span]=level)
 - [x] Dispatch.has_been_set?, clone_span, drop_span, try_close
 - [x] Span#or_current — return self or current span
+- [x] FmtLayer#without_time — disables timestamp output
+- [x] FmtLayer#with_test_writer — writes via `TestWriter` (STDOUT, captured by `crystal spec`)
+- [x] FmtWriter::TestWriter — IO subclass for unit-test output capture
+- [x] FmtWriter::MakeWriter — abstract class with make_writer(meta) → IO
+- [x] FmtWriter::NoopWriter — /dev/null IO that discards writes
+- [x] FmtWriter::WithMaxLevel — level-based writer combinator
+- [x] FmtLayer#with_make_writer — accepts MakeWriter objects
+- [x] FmtWriter::WithMinLevel — min-level writer combinator
+- [x] FmtWriter::WithFilter — metadata-predicate writer combinator
+- [x] FmtWriter::Tee + TeeWriter — fan-out to two writers (`.and`)
+- [x] FmtWriter::OrElse — fallback to second writer when first returns NoopWriter (`.or_else`)
+- [x] FmtSubscriberBuilder — builder pattern with delegate methods + `finish`/`init`/`try_init`
+- [x] Tracing.fmt — entry point returning a default-configured `FmtSubscriberBuilder`
 
 ## Done (sub-crates)
 
@@ -164,9 +177,12 @@ so **verify each against `src/` before starting**.
 - [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
 - [ ] `Json` options: `flatten_event`, `with_current_span`, `with_span_list` (+ `JsonFields` / `JsonVisitor`)
 - [x] `FmtLayer#with_thread_ids`, `#with_thread_names`
-- [ ] `FmtLayer#without_time`, `#with_test_writer`
-- [ ] `MakeWriter` / `MakeWriterExt` traits + combinators (`with_max_level`, `or_else`, `Tee`, `BoxMakeWriter`)
-- [ ] `fmt::Subscriber` builder + `init` / `try_init`, `reload_handle`, `with_filter_reloading`
+- [x] `FmtLayer#without_time`, `#with_test_writer`
+- [x] `TestWriter` — output-capture writer for unit tests
+- [x] `MakeWriter` abstract class + `MakeWriter::Proc` + `NoopWriter`
+- [x] `MakeWriterExt` combinators: `WithMaxLevel`, `WithMinLevel`, `WithFilter`, `Tee` (`.and`), `OrElse` (`.or_else`)
+- [x] `fmt::Subscriber` builder — `Tracing.fmt` → `FmtSubscriberBuilder` with `finish`/`init`/`try_init`
+- [ ] `reload_handle`, `with_filter_reloading` (SubscriberBuilder extension)
 
 ### tracing-subscriber — registry / filter / util
 
@@ -262,5 +278,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 223 examples
+crystal spec   # 255 examples
 ```

@@ -27,10 +27,15 @@ require "./tracing/subscriber/mock"
 require "./tracing/subscriber/span_trace"
 require "./tracing/subscriber/flame"
 require "./tracing/opentelemetry/layer"
+require "./tracing/subscriber/fmt_builder"
 require "./tracing/subscriber_conv"
 
 module Tracing
   VERSION = "0.5.1"
+
+  def self.fmt : FmtSubscriberBuilder
+    FmtSubscriberBuilder.new
+  end
 
   def self.fmt_layer : FmtLayer
     FmtLayer.new
