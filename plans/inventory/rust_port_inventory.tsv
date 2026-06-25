@@ -35,12 +35,12 @@ tracing-appender/src/rolling.rs::const::HOURLY	const	missing	-	auto-generated
 tracing-appender/src/rolling.rs::const::MINUTELY	const	missing	-	auto-generated
 tracing-appender/src/rolling.rs::const::NEVER	const	missing	-	auto-generated
 tracing-appender/src/rolling.rs::const::WEEKLY	const	missing	-	auto-generated
-tracing-appender/src/rolling.rs::func::builder	func	missing	-	auto-generated
+tracing-appender/src/rolling.rs::func::builder	func	ported	src/tracing/subscriber/appender.cr	-
 tracing-appender/src/rolling.rs::func::daily	func	missing	-	auto-generated
 tracing-appender/src/rolling.rs::func::hourly	func	missing	-	auto-generated
 tracing-appender/src/rolling.rs::func::minutely	func	missing	-	auto-generated
 tracing-appender/src/rolling.rs::func::never	func	missing	-	auto-generated
-tracing-appender/src/rolling.rs::func::new	func	missing	-	auto-generated
+tracing-appender/src/rolling.rs::func::new	func	ported	src/tracing/subscriber/appender.cr	RollingFileAppender.new (rotation, dir, prefix, suffix, max_files)
 tracing-appender/src/rolling.rs::func::weekly	func	missing	-	auto-generated
 tracing-appender/src/rolling.rs::method::RollingFileAppender.new	method	missing	-	auto-generated
 tracing-appender/src/rolling.rs::struct::RollingFileAppender	struct	missing	-	auto-generated
@@ -57,12 +57,12 @@ tracing-appender/src/rolling.rs::test::write_hourly_log	test	missing	-	auto-gene
 tracing-appender/src/rolling.rs::test::write_minutely_log	test	missing	-	auto-generated
 tracing-appender/src/rolling.rs::test::write_never_log	test	missing	-	auto-generated
 tracing-appender/src/rolling.rs::test::write_weekly_log	test	missing	-	auto-generated
-tracing-appender/src/rolling/builder.rs::func::build	func	missing	-	auto-generated
-tracing-appender/src/rolling/builder.rs::func::filename_prefix	func	missing	-	auto-generated
-tracing-appender/src/rolling/builder.rs::func::filename_suffix	func	missing	-	auto-generated
-tracing-appender/src/rolling/builder.rs::func::max_log_files	func	missing	-	auto-generated
+tracing-appender/src/rolling/builder.rs::func::build	func	ported	src/tracing/subscriber/appender.cr	-
+tracing-appender/src/rolling/builder.rs::func::filename_prefix	func	ported	src/tracing/subscriber/appender.cr	empty string treated as unset
+tracing-appender/src/rolling/builder.rs::func::filename_suffix	func	ported	src/tracing/subscriber/appender.cr	empty string treated as unset
+tracing-appender/src/rolling/builder.rs::func::max_log_files	func	ported	src/tracing/subscriber/appender.cr	prunes by modification time
 tracing-appender/src/rolling/builder.rs::func::rotation	func	missing	-	auto-generated
-tracing-appender/src/rolling/builder.rs::struct::Builder	struct	missing	-	auto-generated
+tracing-appender/src/rolling/builder.rs::struct::Builder	struct	ported	src/tracing/subscriber/appender.cr	RollingFileAppender::Builder
 tracing-appender/src/rolling/builder.rs::struct::InitError	struct	missing	-	auto-generated
 tracing-attributes/src/lib.rs::func::instrument	func	missing	-	auto-generated
 tracing-attributes/tests/async_fn.rs::test::async_fn_nested	test	missing	-	auto-generated

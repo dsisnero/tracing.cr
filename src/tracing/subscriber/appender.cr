@@ -120,13 +120,63 @@ module Tracing
   class RollingFileAppender
     @rotation : Rotation
     @directory : String
-    @prefix : String
+    @prefix : String?
+    @suffix : String?
+    @max_files : Int32?
     @file : File?
     @current_date : String?
 
-    def initialize(@rotation : Rotation, @directory : String, @prefix : String)
+    def initialize(@rotation : Rotation, @directory : String, @prefix : String?, @suffix : String? = nil, @max_files : Int32? = nil)
       Dir.mkdir_p(@directory)
       rotate
+    end
+
+    # Returns a new `Builder` for configuring a `RollingFileAppender`.
+    def self.builder : Builder
+      Builder.new
+    end
+
+    # Configures and constructs a `RollingFileAppender`.
+    #
+    # Ported from upstream `tracing_appender::rolling::Builder`. Defaults:
+    # rotation `NEVER`, no prefix/suffix, no file limit. An empty prefix or
+    # suffix is treated as unset.
+    class Builder
+      @rotation : Rotation
+      @prefix : String?
+      @suffix : String?
+      @max_files : Int32?
+
+      def initialize
+        @rotation = Rotation::NEVER
+        @prefix = nil
+        @suffix = nil
+        @max_files = nil
+      end
+
+      def rotation(rotation : Rotation) : self
+        @rotation = rotation
+        self
+      end
+
+      def filename_prefix(prefix : String) : self
+        @prefix = prefix.empty? ? nil : prefix
+        self
+      end
+
+      def filename_suffix(suffix : String) : self
+        @suffix = suffix.empty? ? nil : suffix
+        self
+      end
+
+      def max_log_files(n : Int32) : self
+        @max_files = n
+        self
+      end
+
+      def build(directory : String) : RollingFileAppender
+        RollingFileAppender.new(@rotation, directory, @prefix, @suffix, @max_files)
+      end
     end
 
     def write(slice : Bytes) : Nil
@@ -145,13 +195,66 @@ module Tracing
       if @current_date != current
         close
         @current_date = current
-        filename = if @rotation.never?
-                     File.join(@directory, @prefix)
-                   else
-                     File.join(@directory, "#{@prefix}.#{current}")
-                   end
-        @file = File.open(filename, mode: "a")
+        prune_old_logs
+        @file = File.open(File.join(@directory, build_filename(current)), mode: "a")
       end
+    end
+
+    # Builds the log filename for `date`, mirroring upstream `join_date`:
+    # prefix/suffix and (for rotating schedules) the date are joined with `.`.
+    private def build_filename(date : String) : String
+      prefix = @prefix
+      suffix = @suffix
+      if @rotation.never?
+        if prefix && suffix
+          "#{prefix}.#{suffix}"
+        elsif prefix
+          prefix
+        elsif suffix
+          suffix
+        else
+          date
+        end
+      elsif prefix && suffix
+        "#{prefix}.#{date}.#{suffix}"
+      elsif prefix
+        "#{prefix}.#{date}"
+      elsif suffix
+        "#{date}.#{suffix}"
+      else
+        date
+      end
+    end
+
+    # Deletes the oldest matching log files so that at most `max_files - 1`
+    # remain before the next file is created. Mirrors upstream `prune_old_logs`.
+    #
+    # Divergence: upstream orders by file creation time (falling back to the
+    # date parsed from the filename); Crystal's `File::Info` exposes
+    # modification time, so files are ordered by modification time instead.
+    private def prune_old_logs : Nil
+      max = @max_files
+      return unless max
+      files = matching_log_files
+      return if files.size < max
+      files.sort_by! { |entry| entry[:mtime] }
+      files.first(files.size - (max - 1)).each do |entry|
+        File.delete?(entry[:path])
+      end
+    end
+
+    private def matching_log_files : Array({path: String, mtime: Time})
+      prefix = @prefix
+      suffix = @suffix
+      result = [] of {path: String, mtime: Time}
+      Dir.each_child(@directory) do |name|
+        next if prefix && !name.starts_with?(prefix)
+        next if suffix && !name.ends_with?(suffix)
+        path = File.join(@directory, name)
+        next unless File.file?(path)
+        result << {path: path, mtime: File.info(path).modification_time}
+      end
+      result
     end
 
     private def rotate : Nil

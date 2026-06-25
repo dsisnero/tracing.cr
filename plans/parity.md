@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 213 specs across 13 sub-crates.**
+**Total: 219 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -108,6 +108,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] `NonBlocking` — Channel + spawn fiber worker
 - [x] `WorkerGuard` — ensures flush on close
 - [x] `RollingFileAppender` — daily/hourly/minutely/never
+- [x] `RollingFileAppender::Builder` — filename_prefix/suffix, max_log_files
 - [x] `Rotation` enum
 
 ### tracing-mock ✓
@@ -175,7 +176,7 @@ so **verify each against `src/` before starting**.
 
 ### tracing-appender
 
-- [ ] `RollingFileAppender::Builder` — `max_log_files`, `filename_suffix`, `filename_prefix`
+- [x] `RollingFileAppender::Builder` — `max_log_files`, `filename_suffix`, `filename_prefix`
 - [ ] `NonBlocking.lossy` real non-blocking send (currently placeholder — see Divergences)
 
 ### tracing — instrument / futures
@@ -235,11 +236,14 @@ the relevant source files; omitted symbols are marked `skipped` in
   plain `Iterator(SpanRef)`; Rust's separate `ScopeFromRoot` struct is not
   needed (same pattern as `Targets#iter`).
 
-### tracing-appender — `NonBlocking`
+### tracing-appender
 
 - `NonBlocking.lossy` is a placeholder: Crystal's `Channel` supports only
   blocking send, so non-lossy (backpressure) is the actual behavior until a
   non-blocking channel send is available.
+- `RollingFileAppender`'s `max_log_files` prunes by file **modification** time;
+  upstream orders by creation time (with a filename-date fallback), which
+  `File::Info` does not expose on Crystal.
 
 ### tracing-subscriber — `fmt::time`
 
@@ -251,5 +255,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 213 examples
+crystal spec   # 219 examples
 ```
