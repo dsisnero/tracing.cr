@@ -101,15 +101,15 @@ module Tracing
       nil
     end
 
-    # Returns the target/level pairs in this filter, excluding the default.
-    def iter : Array({String, LevelFilter})
-      result = [] of {String, LevelFilter}
-      @directives.each do |directive|
+    # Returns a lazy iterator over the target/level pairs in this filter,
+    # excluding the default. Mirrors upstream `Targets::iter`, which returns an
+    # `Iterator`.
+    def iter : Iterator({String, LevelFilter})
+      @directives.each.compact_map do |directive|
         if t = directive.target
-          result << {t, directive.level}
+          {t, directive.level}
         end
       end
-      result
     end
 
     # Returns whether a target/level pair would be enabled by this filter.

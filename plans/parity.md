@@ -155,8 +155,9 @@ the relevant source files; omitted symbols are marked `skipped` in
   `nil` means "unset" and behaves as `OFF` when filtering. This replaces the
   prior Crystal default of `TRACE` (enable-all); an unset default now disables
   unmatched targets, matching upstream.
-- Upstream's `Iter` / `IntoIter` iterator structs are represented by `#iter`
-  returning an `Array({String, LevelFilter})`; no separate iterator types.
+- `#iter` returns a lazy `Iterator({String, LevelFilter})` (Crystal's analog of
+  Rust's `Iter`). Rust's separate `Iter` (borrowing) and `IntoIter` (owning)
+  structs collapse into this single `Iterator`.
 - `size_of_filters` (Rust `size_of_val`) is not applicable to Crystal.
 
 ### tracing-subscriber — `reload`

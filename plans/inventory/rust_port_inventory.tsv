@@ -641,14 +641,14 @@ tracing-subscriber/src/filter/layer_filters/mod.rs::struct::FilterId	struct	miss
 tracing-subscriber/src/filter/layer_filters/mod.rs::struct::Filtered	struct	missing	-	auto-generated
 tracing-subscriber/src/filter/layer_filters/mod.rs::trait::FilterExt	trait	missing	-	auto-generated
 tracing-subscriber/src/filter/targets.rs::func::default_level	func	ported	src/tracing/subscriber/targets.cr	-
-tracing-subscriber/src/filter/targets.rs::func::iter	func	ported	src/tracing/subscriber/targets.cr	returns Array instead of Iter
+tracing-subscriber/src/filter/targets.rs::func::iter	func	ported	src/tracing/subscriber/targets.cr	returns a lazy Iterator
 tracing-subscriber/src/filter/targets.rs::func::new	func	ported	src/tracing/subscriber/targets.cr	-
 tracing-subscriber/src/filter/targets.rs::func::with_default	func	ported	src/tracing/subscriber/targets.cr	-
 tracing-subscriber/src/filter/targets.rs::func::with_target	func	ported	src/tracing/subscriber/targets.cr	-
 tracing-subscriber/src/filter/targets.rs::func::would_enable	func	ported	src/tracing/subscriber/targets.cr	-
 tracing-subscriber/src/filter/targets.rs::method::Targets.new	method	ported	src/tracing/subscriber/targets.cr	-
-tracing-subscriber/src/filter/targets.rs::struct::IntoIter	struct	skipped	-	Crystal iter returns Array; no owning-iterator struct
-tracing-subscriber/src/filter/targets.rs::struct::Iter	struct	skipped	-	Crystal iter returns Array; no borrowing-iterator struct
+tracing-subscriber/src/filter/targets.rs::struct::IntoIter	struct	skipped	-	Crystal #iter returns one lazy Iterator; no separate owning iterator
+tracing-subscriber/src/filter/targets.rs::struct::Iter	struct	skipped	-	Crystal #iter returns one lazy Iterator; no separate borrowing iterator
 tracing-subscriber/src/filter/targets.rs::struct::Targets	struct	ported	src/tracing/subscriber/targets.cr	-
 tracing-subscriber/src/filter/targets.rs::test::display_roundtrips	test	ported	spec/targets_parse_spec.cr	-
 tracing-subscriber/src/filter/targets.rs::test::expect_parse_valid	test	ported	spec/targets_parse_spec.cr	-

@@ -13,7 +13,7 @@ module TargetsParseSpec
   describe "Targets.parse (ported from filter/targets.rs)" do
     it "parses target=level pairs (parse_ralith)" do
       t = Tracing::Targets.parse("common=info,server=debug")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"common", LF.info},
         {"server", LF.debug},
       ])
@@ -21,7 +21,7 @@ module TargetsParseSpec
 
     it "parses uppercase level names (parse_ralith_uc)" do
       t = Tracing::Targets.parse("common=INFO,server=DEBUG")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"common", LF.info},
         {"server", LF.debug},
       ])
@@ -29,7 +29,7 @@ module TargetsParseSpec
 
     it "parses mixed-case level names (parse_ralith_mixed)" do
       t = Tracing::Targets.parse("common=iNfo,server=dEbUg")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"common", LF.info},
         {"server", LF.debug},
       ])
@@ -37,7 +37,7 @@ module TargetsParseSpec
 
     it "treats a bare target as TRACE and parses off (expect_parse_valid)" do
       t = Tracing::Targets.parse("crate1::mod1=error,crate1::mod2,crate2=debug,crate3=off")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"crate1::mod1", LF.error},
         {"crate1::mod2", LF.trace},
         {"crate2", LF.debug},
@@ -50,7 +50,7 @@ module TargetsParseSpec
       t = Tracing::Targets.parse(
         "crate1::mod1=error,crate1::mod2=warn,crate1::mod2::mod3=info," \
         "crate2=debug,crate3=trace,crate3::mod2::mod1=off")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"crate1::mod1", LF.error},
         {"crate1::mod2", LF.warn},
         {"crate1::mod2::mod3", LF.info},
@@ -64,7 +64,7 @@ module TargetsParseSpec
       t = Tracing::Targets.parse(
         "crate1::mod1=ERROR,crate1::mod2=WARN,crate1::mod2::mod3=INFO," \
         "crate2=DEBUG,crate3=TRACE,crate3::mod2::mod1=OFF")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"crate1::mod1", LF.error},
         {"crate1::mod2", LF.warn},
         {"crate1::mod2::mod3", LF.info},
@@ -78,7 +78,7 @@ module TargetsParseSpec
       t = Tracing::Targets.parse(
         "crate1::mod1=1,crate1::mod2=2,crate1::mod2::mod3=3," \
         "crate2=4,crate3=5,crate3::mod2::mod1=0")
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"crate1::mod1", LF.error},
         {"crate1::mod2", LF.warn},
         {"crate1::mod2::mod3", LF.info},
@@ -110,7 +110,7 @@ module TargetsParseSpec
     it "parses a bare level as the default level" do
       t = Tracing::Targets.parse("info")
       t.default_level.should eq(LF.info)
-      t.iter.empty?.should be_true
+      t.iter.to_a.empty?.should be_true
     end
   end
 
@@ -118,7 +118,7 @@ module TargetsParseSpec
     it "yields target-level pairs excluding the default" do
       t = Tracing::Targets.parse("crate1::mod1=error,crate1::mod2,crate2=debug,crate3=off")
         .with_default(LF.warn)
-      t.iter.sort_by(&.[0]).should eq([
+      t.iter.to_a.sort_by(&.[0]).should eq([
         {"crate1::mod1", LF.error},
         {"crate1::mod2", LF.trace},
         {"crate2", LF.debug},
