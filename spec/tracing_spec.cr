@@ -995,7 +995,7 @@ describe "Targets filter (ported from upstream filter/targets.rs)" do
       .with_target("alpha", Level::ERROR)
       .with_default(LevelFilter.off)
 
-    targets.default_level.into_level.should be_nil
+    targets.default_level.should eq(LevelFilter.off)
   end
 end
 
