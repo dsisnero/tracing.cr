@@ -83,9 +83,19 @@ module Tracing
     def new_span(attrs : Core::Span::Attributes) : Core::Span::Id
       idx = @next_id.add(1, :relaxed)
       id = Core::Span::Id.from_u64(idx)
-      data = SpanData.new(id, attrs.metadata.name, attrs.metadata, parent: attrs.parent.id)
+      data = SpanData.new(id, attrs.metadata.name, attrs.metadata, parent: resolve_parent(attrs.parent))
       @mutex.synchronize { @spans[id.into_u64] = data }
       id
+    end
+
+    # Resolves a new span's parent: an explicit parent id, the current span for
+    # a contextual parent, or none for a root span. Mirrors upstream, where a
+    # contextually-parented span records the currently entered span as its
+    # parent at creation time.
+    private def resolve_parent(parent : Core::Parent) : Core::Span::Id?
+      return parent.id if parent.explicit?
+      return current_span_id if parent.current?
+      nil
     end
 
     def event(event : Core::Event) : Nil

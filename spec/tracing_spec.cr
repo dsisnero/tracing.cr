@@ -415,6 +415,82 @@ describe "Tracing::Registry (ported from upstream registry/sharded.rs)" do
   end
 end
 
+# Ported from registry/mod.rs — SpanRef ancestor iteration (scope / from_root / parent)
+private class ScopeCaptureLayer < Tracing::Layer
+  property scope_names = [] of String
+  property from_root_names = [] of String
+  property parent_name : String?
+  property? had_parent = false
+
+  def on_event(event : Tracing::Core::Event, ctx : Tracing::LayerContext) : Nil
+    sp = ctx.event_span(event)
+    return unless sp
+    @scope_names = sp.scope.map(&.name).to_a
+    @from_root_names = sp.scope.from_root.map(&.name).to_a
+    if parent = sp.parent
+      @parent_name = parent.name
+      @had_parent = true
+    end
+  end
+end
+
+describe "SpanRef#scope (ported from registry/mod.rs)" do
+  it "iterates self then ancestors, leaf to root" do
+    layer = ScopeCaptureLayer.new
+    subscriber = Tracing::Registry.new.with(layer)
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      span!(Level::INFO, "root").in_scope do
+        span!(Level::INFO, "child").in_scope do
+          span!(Level::INFO, "leaf").in_scope do
+            info!("ev")
+          end
+        end
+      end
+    end
+    layer.scope_names.should eq(["leaf", "child", "root"])
+  end
+
+  it "from_root reverses to root then descendants" do
+    layer = ScopeCaptureLayer.new
+    subscriber = Tracing::Registry.new.with(layer)
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      span!(Level::INFO, "root").in_scope do
+        span!(Level::INFO, "child").in_scope do
+          span!(Level::INFO, "leaf").in_scope do
+            info!("ev")
+          end
+        end
+      end
+    end
+    layer.from_root_names.should eq(["root", "child", "leaf"])
+  end
+
+  it "parent returns the enclosing span" do
+    layer = ScopeCaptureLayer.new
+    subscriber = Tracing::Registry.new.with(layer)
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      span!(Level::INFO, "outer").in_scope do
+        span!(Level::INFO, "inner").in_scope do
+          info!("ev")
+        end
+      end
+    end
+    layer.parent_name.should eq("outer")
+  end
+
+  it "parent is nil and scope is just self for a root span" do
+    layer = ScopeCaptureLayer.new
+    subscriber = Tracing::Registry.new.with(layer)
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      span!(Level::INFO, "solo").in_scope do
+        info!("ev")
+      end
+    end
+    layer.scope_names.should eq(["solo"])
+    layer.had_parent?.should be_false
+  end
+end
+
 # RED tests — tracing-subscriber Layer
 describe "Tracing::Layer (ported from upstream layer/mod.rs)" do
   it "composes a Layer with a Registry to observe events" do

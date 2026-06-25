@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 198 specs across 13 sub-crates.**
+**Total: 202 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -89,6 +89,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Targets.parse (FromStr) — `target=level` directives, numeric/uppercase/mixed levels
 - [x] Targets#to_s (Display) + parse round-trip, #default_level (Option), #iter, #would_enable
 - [x] Reload (reload::Layer) + Handle — runtime-swappable inner layer (reload/modify/with_current/handle)
+- [x] SpanRef#scope / #from_root / #parent — ancestor iteration (contextual parents resolved at new_span)
 - [x] EnvFilter span-name matching (target[span]=level)
 - [x] Dispatch.has_been_set?, clone_span, drop_span, try_close
 - [x] Span#or_current — return self or current span
@@ -166,7 +167,7 @@ so **verify each against `src/` before starting**.
 
 ### tracing-subscriber — registry / filter / util
 
-- [ ] `SpanRef#scope` / `#parents` / `#from_root` (`Scope` ancestor iteration)
+- [x] `SpanRef#scope` / `#from_root` / `#parent` (`Scope` ancestor iteration; registry resolves contextual parents at `new_span`)
 - [ ] `SubscriberInitExt#try_init`
 - [ ] `EnvFilter` field-value directives `target[span{field=val}]=level` (verify; basic level/target/span-name done)
 - [ ] `FilterExt` combinators `.and` / `.or` / `.not` / `.boxed` (verify; `and_then` / `Filtered` done)
@@ -227,6 +228,12 @@ the relevant source files; omitted symbols are marked `skipped` in
 - The Rust weak-reference / lock-poisoning surface (`clone_current`,
   `is_dropped`, `is_poisoned`, `Error`) has no Crystal equivalent and is omitted.
 
+### tracing-subscriber — `registry`
+
+- `SpanRef#scope` returns a lazy `Scope` iterator and `#from_root` returns a
+  plain `Iterator(SpanRef)`; Rust's separate `ScopeFromRoot` struct is not
+  needed (same pattern as `Targets#iter`).
+
 ### tracing-appender — `NonBlocking`
 
 - `NonBlocking.lossy` is a placeholder: Crystal's `Channel` supports only
@@ -243,5 +250,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 198 examples
+crystal spec   # 202 examples
 ```

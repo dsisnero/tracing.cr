@@ -948,16 +948,16 @@ tracing-subscriber/src/registry/extensions.rs::test::test_extensions	test	missin
 tracing-subscriber/src/registry/mod.rs::func::extensions	func	missing	-	auto-generated
 tracing-subscriber/src/registry/mod.rs::func::extensions_mut	func	missing	-	auto-generated
 tracing-subscriber/src/registry/mod.rs::func::fields	func	missing	-	auto-generated
-tracing-subscriber/src/registry/mod.rs::func::from_root	func	missing	-	auto-generated
+tracing-subscriber/src/registry/mod.rs::func::from_root	func	ported	src/tracing/subscriber/lookup_span.cr	-
 tracing-subscriber/src/registry/mod.rs::func::id	func	missing	-	auto-generated
 tracing-subscriber/src/registry/mod.rs::func::metadata	func	missing	-	auto-generated
 tracing-subscriber/src/registry/mod.rs::func::name	func	missing	-	auto-generated
-tracing-subscriber/src/registry/mod.rs::func::parent	func	missing	-	auto-generated
-tracing-subscriber/src/registry/mod.rs::func::scope	func	missing	-	auto-generated
-tracing-subscriber/src/registry/mod.rs::method::Scope.from_root	method	missing	-	auto-generated
+tracing-subscriber/src/registry/mod.rs::func::parent	func	ported	src/tracing/subscriber/lookup_span.cr	-
+tracing-subscriber/src/registry/mod.rs::func::scope	func	ported	src/tracing/subscriber/lookup_span.cr	-
+tracing-subscriber/src/registry/mod.rs::method::Scope.from_root	method	ported	src/tracing/subscriber/lookup_span.cr	-
 tracing-subscriber/src/registry/mod.rs::method::SpanRef.id	method	missing	-	auto-generated
-tracing-subscriber/src/registry/mod.rs::struct::Scope	struct	missing	-	auto-generated
-tracing-subscriber/src/registry/mod.rs::struct::ScopeFromRoot	struct	missing	-	auto-generated
+tracing-subscriber/src/registry/mod.rs::struct::Scope	struct	ported	src/tracing/subscriber/lookup_span.cr	-
+tracing-subscriber/src/registry/mod.rs::struct::ScopeFromRoot	struct	skipped	-	Crystal #from_root returns a plain Iterator; no separate ScopeFromRoot struct
 tracing-subscriber/src/registry/mod.rs::struct::SpanRef	struct	missing	-	auto-generated
 tracing-subscriber/src/registry/mod.rs::test::spanref_scope_fromroot_iteration_order	test	missing	-	auto-generated
 tracing-subscriber/src/registry/mod.rs::test::spanref_scope_iteration_order	test	missing	-	auto-generated

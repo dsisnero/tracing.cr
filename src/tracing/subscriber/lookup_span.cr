@@ -5,11 +5,25 @@ module Tracing
   struct SpanRef
     getter name : String
     getter metadata : Metadata
-    getter parent : Core::Span::Id?
+    getter parent_id : Core::Span::Id?
     @registry : Registry
     @span_id : Core::Span::Id
 
-    def initialize(@name, @metadata, @parent, @registry, @span_id)
+    def initialize(@name, @metadata, @parent_id, @registry, @span_id)
+    end
+
+    # Returns this span's parent `SpanRef`, or `nil` if it is a root span.
+    def parent : SpanRef?
+      pid = @parent_id
+      return unless pid
+      @registry.span(pid)
+    end
+
+    # Returns an iterator over this span and its ancestors, ordered leaf to
+    # root (this span first, then its parent, and so on). Mirrors upstream
+    # `SpanRef::scope`; call `#from_root` on the result to reverse the order.
+    def scope : Scope
+      Scope.new(@registry, @span_id)
     end
 
     # Get immutable access to span extensions.
@@ -22,6 +36,33 @@ module Tracing
       data = @registry.span_data(@span_id)
       return unless data
       ExtensionsMut.new(data.extensions)
+    end
+  end
+
+  # An iterator over a span and its ancestors, ordered leaf to root.
+  #
+  # Ported from upstream `tracing_subscriber::registry::Scope`.
+  class Scope
+    include Iterator(SpanRef)
+
+    @registry : Registry
+    @next_id : Core::Span::Id?
+
+    def initialize(@registry : Registry, @next_id : Core::Span::Id?)
+    end
+
+    def next
+      id = @next_id
+      return stop if id.nil?
+      span = @registry.span(id)
+      return stop if span.nil?
+      @next_id = span.parent_id
+      span
+    end
+
+    # Flips the order to root-to-leaf. Mirrors upstream `Scope::from_root`.
+    def from_root : Iterator(SpanRef)
+      to_a.reverse!.each
     end
   end
 
