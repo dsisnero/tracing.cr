@@ -1400,7 +1400,7 @@ describe "RollingFileAppender" do
   it "creates a file with timestamped name for daily rotation" do
     appender = Tracing::RollingFileAppender.new(
       Tracing::Rotation::DAILY,
-      "tmp/logs",
+      "temp/logs",
       "test"
     )
     appender.should be_a(Tracing::RollingFileAppender)
@@ -1410,18 +1410,18 @@ describe "RollingFileAppender" do
   it "writes to the current log file" do
     appender = Tracing::RollingFileAppender.new(
       Tracing::Rotation::NEVER,
-      "tmp/logs",
+      "temp/logs",
       "write_test"
     )
     appender.write("test line\n".to_slice)
     appender.close
 
-    files = Dir["tmp/logs/write_test*"]
+    files = Dir["temp/logs/write_test*"]
     files.size.should be > 0
     content = File.read(files[0])
     content.should contain("test line")
   ensure
-    Dir["tmp/logs/write_test*"].each { |file| File.delete(file) }
+    Dir["temp/logs/write_test*"].each { |file| File.delete(file) }
   end
 end
 
@@ -1475,10 +1475,10 @@ describe "FlameLayer (ported from tracing-flame/src/lib.rs)" do
   end
 
   it "creates with_file helper" do
-    flame, guard = Tracing::FlameLayer.with_file("tmp/flame_test.folded")
+    flame, guard = Tracing::FlameLayer.with_file("temp/flame_test.folded")
     flame.should be_a(Tracing::FlameLayer)
     guard.close
-    File.delete("tmp/flame_test.folded") if File.exists?("tmp/flame_test.folded")
+    File.delete("temp/flame_test.folded") if File.exists?("temp/flame_test.folded")
   end
 end
 
