@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 263 specs across 13 sub-crates.**
+**Total: 267 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -110,6 +110,9 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Tracing.fmt — entry point returning a default-configured `FmtSubscriberBuilder`
 - [x] FmtLayer#flatten_event / #with_current_span — JSON format options matching upstream defaults
 - [x] FmtSubscriberBuilder#with_filter_reloading + #reload_handle — runtime filter swapping via Reload
+- [x] FmtFormat::Writer — IO wrapper with ANSI escape tracking
+- [x] FmtFormat::FormatFields — abstract class for field formatting
+- [x] FmtFormat::FormatEvent — abstract class for event formatting
 
 ## Done (sub-crates)
 
@@ -174,7 +177,8 @@ so **verify each against `src/` before starting**.
 
 ### tracing-subscriber — `fmt` (largest gap)
 
-- [ ] `FormatEvent` / `FormatFields` traits + `FmtContext` (pluggable formatting; currently hardcoded in `FmtLayer`)
+- [x] `FormatEvent` / `FormatFields` abstract classes + `Writer` struct (pluggable formatting foundation)
+- [ ] Wire `FmtLayer` to delegate to `FormatEvent` implementation (next step)
 - [ ] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
 - [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
 - [x] `Json` options: `flatten_event`, `with_current_span` (span list deferred — needs `FormattedFields` infra)
@@ -281,5 +285,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 263 examples
+crystal spec   # 267 examples
 ```

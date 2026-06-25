@@ -2618,3 +2618,44 @@ describe "FmtSubscriberBuilder with_filter_reloading" do
     output.should contain("now_visible")
   end
 end
+
+# RED tests — FormatEvent / FormatFields / Writer types (ported from upstream fmt/format/mod.rs)
+describe "FmtFormat Writer" do
+  it "wraps an IO and tracks ANSI state" do
+    io = IO::Memory.new
+    w = Tracing::FmtFormat::Writer.new(io, has_ansi_escapes: true)
+    w.has_ansi_escapes?.should be_true
+    w.io.should be(io)
+  end
+
+  it "delegates writes to the underlying IO" do
+    io = IO::Memory.new
+    w = Tracing::FmtFormat::Writer.new(io)
+    w.io.write("hello".to_slice)
+    io.to_s.should eq("hello")
+  end
+end
+
+describe "FmtFormat FormatFields" do
+  it "is an abstract class that concrete types implement" do
+    formatter = TestFormatFields.new
+    formatter.should be_a(Tracing::FmtFormat::FormatFields)
+  end
+end
+
+describe "FmtFormat FormatEvent" do
+  it "is an abstract class that concrete types implement" do
+    formatter = TestFormatEvent.new
+    formatter.should be_a(Tracing::FmtFormat::FormatEvent)
+  end
+end
+
+private class TestFormatFields < Tracing::FmtFormat::FormatFields
+  def format_fields(writer : Tracing::FmtFormat::Writer, values : Tracing::Field::ValueSet) : Nil
+  end
+end
+
+private class TestFormatEvent < Tracing::FmtFormat::FormatEvent
+  def format_event(ctx : Tracing::LayerContext, writer : Tracing::FmtFormat::Writer, event : Tracing::Core::Event) : Nil
+  end
+end
