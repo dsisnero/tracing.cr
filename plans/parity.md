@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 202 specs across 13 sub-crates.**
+**Total: 213 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -90,6 +90,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Targets#to_s (Display) + parse round-trip, #default_level (Option), #iter, #would_enable
 - [x] Reload (reload::Layer) + Handle — runtime-swappable inner layer (reload/modify/with_current/handle)
 - [x] SpanRef#scope / #from_root / #parent — ancestor iteration (contextual parents resolved at new_span)
+- [x] FilterExt combinators — Layer#and / #or / #not (And/Or/Not filter combinators)
 - [x] EnvFilter span-name matching (target[span]=level)
 - [x] Dispatch.has_been_set?, clone_span, drop_span, try_close
 - [x] Span#or_current — return self or current span
@@ -170,7 +171,7 @@ so **verify each against `src/` before starting**.
 - [x] `SpanRef#scope` / `#from_root` / `#parent` (`Scope` ancestor iteration; registry resolves contextual parents at `new_span`)
 - [ ] `SubscriberInitExt#try_init`
 - [ ] `EnvFilter` field-value directives `target[span{field=val}]=level` (verify; basic level/target/span-name done)
-- [ ] `FilterExt` combinators `.and` / `.or` / `.not` / `.boxed` (verify; `and_then` / `Filtered` done)
+- [x] `FilterExt` combinators `Layer#and` / `#or` / `#not` (`.boxed` is N/A — Crystal uses runtime polymorphism)
 
 ### tracing-appender
 
@@ -250,5 +251,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 202 examples
+crystal spec   # 213 examples
 ```

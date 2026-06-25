@@ -628,9 +628,9 @@ tracing-subscriber/src/filter/filter_fn.rs::method::DynFilterFn.with_max_level_h
 tracing-subscriber/src/filter/filter_fn.rs::method::FilterFn.new	method	missing	-	auto-generated
 tracing-subscriber/src/filter/filter_fn.rs::struct::DynFilterFn	struct	missing	-	auto-generated
 tracing-subscriber/src/filter/filter_fn.rs::struct::FilterFn	struct	missing	-	auto-generated
-tracing-subscriber/src/filter/layer_filters/combinator.rs::struct::And	struct	missing	-	auto-generated
-tracing-subscriber/src/filter/layer_filters/combinator.rs::struct::Not	struct	missing	-	auto-generated
-tracing-subscriber/src/filter/layer_filters/combinator.rs::struct::Or	struct	missing	-	auto-generated
+tracing-subscriber/src/filter/layer_filters/combinator.rs::struct::And	struct	ported	src/tracing/subscriber/filter_ext.cr	-
+tracing-subscriber/src/filter/layer_filters/combinator.rs::struct::Not	struct	ported	src/tracing/subscriber/filter_ext.cr	-
+tracing-subscriber/src/filter/layer_filters/combinator.rs::struct::Or	struct	ported	src/tracing/subscriber/filter_ext.cr	-
 tracing-subscriber/src/filter/layer_filters/mod.rs::func::filter	func	missing	-	auto-generated
 tracing-subscriber/src/filter/layer_filters/mod.rs::func::filter_mut	func	missing	-	auto-generated
 tracing-subscriber/src/filter/layer_filters/mod.rs::func::inner	func	missing	-	auto-generated
@@ -639,7 +639,7 @@ tracing-subscriber/src/filter/layer_filters/mod.rs::func::new	func	missing	-	aut
 tracing-subscriber/src/filter/layer_filters/mod.rs::method::Filtered.new	method	missing	-	auto-generated
 tracing-subscriber/src/filter/layer_filters/mod.rs::struct::FilterId	struct	missing	-	auto-generated
 tracing-subscriber/src/filter/layer_filters/mod.rs::struct::Filtered	struct	missing	-	auto-generated
-tracing-subscriber/src/filter/layer_filters/mod.rs::trait::FilterExt	trait	missing	-	auto-generated
+tracing-subscriber/src/filter/layer_filters/mod.rs::trait::FilterExt	trait	ported	src/tracing/subscriber/filter_ext.cr	Layer#and / #or / #not
 tracing-subscriber/src/filter/targets.rs::func::default_level	func	ported	src/tracing/subscriber/targets.cr	-
 tracing-subscriber/src/filter/targets.rs::func::iter	func	ported	src/tracing/subscriber/targets.cr	returns a lazy Iterator
 tracing-subscriber/src/filter/targets.rs::func::new	func	ported	src/tracing/subscriber/targets.cr	-
