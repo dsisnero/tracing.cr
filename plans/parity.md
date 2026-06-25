@@ -22,6 +22,9 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 
 **Total: 198 specs across 13 sub-crates.**
 
+> `✓` marks feature-level parity for the shipped surface. Outstanding work is
+> tracked in [Remaining for Parity](#remaining-for-parity).
+
 ## Done (core)
 
 ### tracing-core ✓
@@ -139,9 +142,62 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Dynamic span name (otel.name)
 - [x] Error event → exception detection
 - [x] with_level, with_target, with_location, with_threads
+
+(Remaining OTel items — Tracer integration, Context propagation, Metrics — are
+tracked under [Remaining for Parity](#remaining-for-parity).)
+
+## Remaining for Parity
+
+Genuine feature gaps from the `plans/inventory/` audit. Most remaining inventory
+rows are auto-generated test stubs or getters already covered by shipped
+features; the items below are the real gaps. The inventory is under-reconciled,
+so **verify each against `src/` before starting**.
+
+### tracing-subscriber — `fmt` (largest gap)
+
+- [ ] `FormatEvent` / `FormatFields` traits + `FmtContext` (pluggable formatting; currently hardcoded in `FmtLayer`)
+- [ ] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
+- [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
+- [ ] `Json` options: `flatten_event`, `with_current_span`, `with_span_list` (+ `JsonFields` / `JsonVisitor`)
+- [ ] `FmtLayer#with_thread_ids`, `#with_thread_names`
+- [ ] `FmtLayer#without_time`, `#with_test_writer`
+- [ ] `MakeWriter` / `MakeWriterExt` traits + combinators (`with_max_level`, `or_else`, `Tee`, `BoxMakeWriter`)
+- [ ] `fmt::Subscriber` builder + `init` / `try_init`, `reload_handle`, `with_filter_reloading`
+
+### tracing-subscriber — registry / filter / util
+
+- [ ] `SpanRef#scope` / `#parents` / `#from_root` (`Scope` ancestor iteration)
+- [ ] `SubscriberInitExt#try_init`
+- [ ] `EnvFilter` field-value directives `target[span{field=val}]=level` (verify; basic level/target/span-name done)
+- [ ] `FilterExt` combinators `.and` / `.or` / `.not` / `.boxed` (verify; `and_then` / `Filtered` done)
+
+### tracing-appender
+
+- [ ] `RollingFileAppender::Builder` — `max_log_files`, `filename_suffix`, `filename_prefix`
+- [ ] `NonBlocking.lossy` real non-blocking send (currently placeholder — see Divergences)
+
+### tracing — instrument / futures
+
+- [ ] `Instrument` / `WithSubscriber` for fibers (async instrumentation; partially covered by `tracing/concurrency`)
+
+### Sub-crates not started (scope decisions)
+
+- [ ] tracing-error: backtrace formatting + `ExtractSpanTrace` / `InstrumentError` / `InstrumentResult`
+- [ ] tracing-log: `AsLog` / `AsTrace` / `NormalizeEvent` / `interest_cache`, `LogTracer::builder`
+- [ ] tracing-futures: `Instrument` / `WithSubscriber` traits
+- [ ] tracing-serde: standalone `AsSerde` / `AsMap` traits (likely **N/A** — Crystal uses `JSON.build`)
+- [ ] tracing-journald: systemd journal sink (Linux-only — decide **skip**)
+- [ ] tracing-tower: tower middleware (Rust-ecosystem-specific — decide **skip**)
+
+### tracing-opentelemetry (blocked / deferred)
+
 - [ ] Tracer integration (blocked — needs dynamic dispatch)
 - [ ] Context propagation (blocked — needs OTel Context API)
 - [ ] Metrics (deferred)
+
+### Housekeeping
+
+- [ ] Reconcile `plans/inventory/` — mark already-ported symbols so `missing` reflects real gaps
 
 ## Divergences
 
