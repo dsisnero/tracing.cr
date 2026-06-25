@@ -70,6 +70,8 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] NoOpLayer + Nil-as-Layer
 - [x] FmtLayer (compact, pretty, JSON, ANSI)
 - [x] FmtLayer.with_target, .with_level, .with_span_events
+- [x] FmtLayer.with_timer (FormatTime: SystemTime, Uptime)
+- [x] DateTime (musl-based ISO 8601, full i64 range)
 - [x] FmtLayer.make_writer (dynamic writer block)
 - [x] FmtSpan @[Flags] enum
 - [x] MockSubscriber

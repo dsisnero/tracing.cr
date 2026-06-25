@@ -28,6 +28,7 @@ module Tracing
     @span_events : FmtSpan
     @make_writer : (-> IO)?
     @use_ansi : Bool
+    @timer : FmtTime::FormatTime?
 
     def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
       @io = io
@@ -40,6 +41,7 @@ module Tracing
       @span_events = FmtSpan::FULL
       @make_writer = nil
       @use_ansi = false
+      @timer = FmtTime.time
     end
 
     def compact : self
@@ -81,7 +83,9 @@ module Tracing
 
       JSON.build(io) do |json|
         json.object do
-          json.field "timestamp", Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ")
+          if ts = timestamp_str
+            json.field "timestamp", ts
+          end
           json.field "level", event.metadata.level.as_str
           json.field "name", event.metadata.name
           if @show_target
@@ -137,6 +141,29 @@ module Tracing
       self
     end
 
+    def with_timer(timer : FmtTime::FormatTime?) : self
+      @timer = timer
+      self
+    end
+
+    def with_none_timer : self
+      @timer = nil
+      self
+    end
+
+    private def write_timestamp(io : IO) : Nil
+      if t = @timer
+        t.format_time(io)
+        io << " "
+      end
+    end
+
+    private def timestamp_str : String?
+      t = @timer
+      return unless t
+      String.build { |io| t.format_time(io) }
+    end
+
     private def level_color(level : Level) : String
       return "" unless @use_ansi
       case level
@@ -174,7 +201,7 @@ module Tracing
       span_name = ctx.event_span(event).try(&.name) || ""
 
       unless @compact_mode
-        io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+        write_timestamp(io)
       end
       if @show_level
         color = level_color(event.metadata.level)
@@ -214,7 +241,7 @@ module Tracing
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
       return unless @span_events.new?
       io = resolve_io
-      io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+      write_timestamp(io)
       io << attrs.metadata.level.as_str.rjust(5) << " "
       io << "new " << attrs.metadata.name << "\n"
     end
@@ -225,7 +252,7 @@ module Tracing
       span = ctx.span(id)
       if span
         io = resolve_io
-        io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+        write_timestamp(io)
         io << span.metadata.level.as_str.rjust(5) << " "
         io << "enter " << span.name << "\n"
       end
@@ -237,7 +264,7 @@ module Tracing
       span = ctx.span(id)
       if span
         io = resolve_io
-        io << Time.utc.to_s("%Y-%m-%dT%H:%M:%S.%LZ") << " "
+        write_timestamp(io)
         io << span.metadata.level.as_str.rjust(5) << " "
         io << "exit " << span.name << "\n"
       end
