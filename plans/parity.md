@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 261 specs across 13 sub-crates.**
+**Total: 263 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -109,6 +109,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] FmtSubscriberBuilder — builder pattern with delegate methods + `finish`/`init`/`try_init`
 - [x] Tracing.fmt — entry point returning a default-configured `FmtSubscriberBuilder`
 - [x] FmtLayer#flatten_event / #with_current_span — JSON format options matching upstream defaults
+- [x] FmtSubscriberBuilder#with_filter_reloading + #reload_handle — runtime filter swapping via Reload
 
 ## Done (sub-crates)
 
@@ -184,7 +185,7 @@ so **verify each against `src/` before starting**.
 - [x] `MakeWriter` abstract class + `MakeWriter::Proc` + `NoopWriter`
 - [x] `MakeWriterExt` combinators: `WithMaxLevel`, `WithMinLevel`, `WithFilter`, `Tee` (`.and`), `OrElse` (`.or_else`)
 - [x] `fmt::Subscriber` builder — `Tracing.fmt` → `FmtSubscriberBuilder` with `finish`/`init`/`try_init`
-- [ ] `reload_handle`, `with_filter_reloading` (SubscriberBuilder extension)
+- [x] `FmtSubscriberBuilder#with_filter_reloading` + `#reload_handle` — runtime filter swapping
 
 ### tracing-subscriber — registry / filter / util
 
@@ -280,5 +281,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 255 examples
+crystal spec   # 263 examples
 ```

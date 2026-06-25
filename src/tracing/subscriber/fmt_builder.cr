@@ -4,15 +4,18 @@ module Tracing
   class FmtSubscriberBuilder
     @layer : FmtLayer
     @filter : LevelFilter
+    @filter_layer : Layer?
 
     def initialize
       @layer = FmtLayer.new
       @filter = DEFAULT_MAX_LEVEL
+      @filter_layer = nil
     end
 
     def finish : Layered(Layered(Registry))
       inner = Registry.new.with(@layer)
-      inner.with(LevelFilterLayer.new(@filter))
+      filter_l = @filter_layer || LevelFilterLayer.new(@filter)
+      inner.with(filter_l)
     end
 
     def init : Nil
@@ -105,5 +108,18 @@ module Tracing
       @filter = filter
       self
     end
+
+    def with_filter_reloading : self
+      filter_l = LevelFilterLayer.new(@filter)
+      reload_layer, @reload_handle = Reload.new(filter_l)
+      @filter_layer = reload_layer
+      self
+    end
+
+    def reload_handle : Handle
+      @reload_handle.not_nil!
+    end
+
+    @reload_handle : Handle?
   end
 end

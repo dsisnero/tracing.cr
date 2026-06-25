@@ -2567,3 +2567,54 @@ describe "FmtLayer JSON options" do
     json["val"].as_i.should eq(42)
   end
 end
+
+# RED tests — with_filter_reloading + reload_handle (ported from upstream fmt/mod.rs)
+describe "FmtSubscriberBuilder with_filter_reloading" do
+  it "provides a reload handle after with_filter_reloading" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .with_max_level(LevelFilter.error)
+      .with_filter_reloading
+      .finish
+
+    handle = Tracing.fmt
+      .with_max_level(LevelFilter.error)
+      .with_filter_reloading
+      .reload_handle
+
+    handle.should be_a(Tracing::Handle)
+  end
+
+  it "reload_handle modifies filter at runtime" do
+    io = IO::Memory.new
+    builder = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .with_max_level(LevelFilter.error)
+      .with_filter_reloading
+
+    handle = builder.reload_handle
+    subscriber = builder.finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("will_show")
+      info!("initially_hidden")
+    end
+
+    # After reloading filter to TRACE, INFO events pass through
+    handle.reload(Tracing::LevelFilterLayer.new(LevelFilter.trace))
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      error!("still_shows")
+      info!("now_visible")
+    end
+
+    output = io.to_s
+    output.should contain("will_show")
+    output.should_not contain("initially_hidden")
+    output.should contain("still_shows")
+    output.should contain("now_visible")
+  end
+end
