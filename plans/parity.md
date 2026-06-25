@@ -143,6 +143,44 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [ ] Context propagation (blocked — needs OTel Context API)
 - [ ] Metrics (deferred)
 
+## Divergences
+
+Intentional differences from upstream. Behavioral divergences are also noted in
+the relevant source files; omitted symbols are marked `skipped` in
+`plans/inventory/`.
+
+### tracing-subscriber — `filter::Targets`
+
+- `#default_level` returns `LevelFilter?` (matches upstream `Option<LevelFilter>`):
+  `nil` means "unset" and behaves as `OFF` when filtering. This replaces the
+  prior Crystal default of `TRACE` (enable-all); an unset default now disables
+  unmatched targets, matching upstream.
+- Upstream's `Iter` / `IntoIter` iterator structs are represented by `#iter`
+  returning an `Array({String, LevelFilter})`; no separate iterator types.
+- `size_of_filters` (Rust `size_of_val`) is not applicable to Crystal.
+
+### tracing-subscriber — `reload`
+
+- The upstream global callsite interest-cache recompute on reload
+  (`callsite::rebuild_interest_cache`) is omitted. The port's
+  `Dispatch.with_default` is fiber-local and does not register a global
+  dispatcher, and rebuilding with no registered dispatcher would mark every
+  callsite uninterested. `Reload` therefore only swaps the inner layer; global
+  interest management remains the dispatcher's responsibility.
+- The Rust weak-reference / lock-poisoning surface (`clone_current`,
+  `is_dropped`, `is_poisoned`, `Error`) has no Crystal equivalent and is omitted.
+
+### tracing-appender — `NonBlocking`
+
+- `NonBlocking.lossy` is a placeholder: Crystal's `Channel` supports only
+  blocking send, so non-lossy (backpressure) is the actual behavior until a
+  non-blocking channel send is available.
+
+### tracing-subscriber — `fmt::time`
+
+- `chrono` / `time` crate formatters are not ported (no Crystal equivalent);
+  `SystemTime` / `Uptime` / a musl-based `DateTime` cover the built-in timers.
+
 ## Quality Gates
 
 ```bash
