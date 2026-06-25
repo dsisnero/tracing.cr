@@ -62,7 +62,7 @@ module Tracing
     end
 
     def enabled?(metadata : Metadata, ctx : LayerContext) : Bool
-      @directives.any? { |d| directive_matches?(d, metadata, ctx) }
+      @directives.any? { |directive| directive_matches?(directive, metadata, ctx) }
     end
 
     private def directive_matches?(d : Directive, meta : Metadata, ctx : LayerContext) : Bool

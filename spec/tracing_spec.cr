@@ -1592,7 +1592,7 @@ end
 
 private class TestSpan
   getter name : String
-  property finished : Bool = false
+  property? finished : Bool = false
 
   def initialize(@name : String)
   end
