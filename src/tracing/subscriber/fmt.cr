@@ -33,6 +33,9 @@ module Tracing
     @timer : FmtTime::FormatTime?
     @show_thread_ids : Bool
     @show_thread_names : Bool
+    @json_flatten_event : Bool
+    @json_show_current_span : Bool
+    @json_show_span_list : Bool
 
     def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
       @io = io
@@ -49,6 +52,9 @@ module Tracing
       @timer = FmtTime.time
       @show_thread_ids = false
       @show_thread_names = false
+      @json_flatten_event = false
+      @json_show_current_span = true
+      @json_show_span_list = true
     end
 
     def compact : self
@@ -97,48 +103,55 @@ module Tracing
     end
 
     private def write_json_event(io : IO, event : Core::Event, ctx : LayerContext) : Nil
-      span_name = ctx.event_span(event).try(&.name)
+      span_name = (@json_show_current_span ? ctx.event_span(event).try(&.name) : nil)
+      vs = event.values
 
-      JSON.build(io) do |json|
-        json.object do
-          if ts = timestamp_str
-            json.field "timestamp", ts
-          end
-          json.field "level", event.metadata.level.as_str
-          json.field "name", event.metadata.name
-          if @show_target
-            json.field "target", event.metadata.target
-          end
-          if span_name
-            json.field "span", span_name
-          end
+      obj = {} of String => JSON::Any
+      if ts = timestamp_str
+        obj["timestamp"] = JSON::Any.new(ts)
+      end
+      obj["level"] = JSON::Any.new(event.metadata.level.as_str)
 
-          vs = event.values
-          if !vs.empty?
-            collector = JsonFieldCollector.new
-            vs.visit(collector)
-            collector.entries.each do |key, any_val|
-              case v = any_val.raw
-              when Int64   then json.field key, v
-              when Float64 then json.field key, v
-              when Bool    then json.field key, v
-              else              json.field key, any_val.to_s
-              end
-            end
-          end
-
-          if @show_thread_names
-            if name = Fiber.current.name
-              json.field "threadName", name
-            elsif !@show_thread_ids
-              json.field "threadName", Fiber.current.object_id.to_s
-            end
-          end
-          if @show_thread_ids
-            json.field "threadId", Fiber.current.object_id.to_s
-          end
+      if @json_flatten_event
+        obj["name"] = JSON::Any.new(event.metadata.name)
+        collector = JsonFieldCollector.new
+        vs.visit(collector)
+        collector.entries.each do |key, any_val|
+          obj[key] = any_val
         end
       end
+
+      if span_name
+        obj["span"] = JSON::Any.new(span_name)
+      end
+
+      unless @json_flatten_event
+        fields = {} of String => JSON::Any
+        fields["message"] = JSON::Any.new(event.metadata.name)
+        collector = JsonFieldCollector.new
+        vs.visit(collector)
+        collector.entries.each do |key, any_val|
+          fields[key] = any_val
+        end
+        obj["fields"] = JSON::Any.new(fields)
+      end
+
+      if @show_target
+        obj["target"] = JSON::Any.new(event.metadata.target)
+      end
+
+      if @show_thread_names
+        if name = Fiber.current.name
+          obj["threadName"] = JSON::Any.new(name)
+        elsif !@show_thread_ids
+          obj["threadName"] = JSON::Any.new(Fiber.current.object_id.to_s)
+        end
+      end
+      if @show_thread_ids
+        obj["threadId"] = JSON::Any.new(Fiber.current.object_id.to_s)
+      end
+
+      obj.to_json(io)
       io << "\n"
     end
 
@@ -183,6 +196,21 @@ module Tracing
     # this shows the fiber's name (see Divergences).
     def with_thread_names(show : Bool) : self
       @show_thread_names = show
+      self
+    end
+
+    def flatten_event(flatten : Bool) : self
+      @json_flatten_event = flatten
+      self
+    end
+
+    def with_current_span(show : Bool) : self
+      @json_show_current_span = show
+      self
+    end
+
+    def with_span_list(show : Bool) : self
+      @json_show_span_list = show
       self
     end
 

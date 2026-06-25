@@ -1705,7 +1705,7 @@ end
 describe "FmtLayer JSON mode (ported from tracing-serde)" do
   it "outputs events as JSON lines" do
     io = IO::Memory.new
-    layer = Tracing::FmtLayer.new(io).json
+    layer = Tracing::FmtLayer.new(io).json.with_span_events(Tracing::FmtSpan::NONE)
     subscriber = Tracing::Registry.new.with(layer)
 
     Dispatch.with_default(Dispatch.new(subscriber)) do
@@ -1713,12 +1713,12 @@ describe "FmtLayer JSON mode (ported from tracing-serde)" do
     end
 
     output = io.to_s.strip
-    # Should be valid JSON
+    # Should be valid JSON; fields are nested under "fields" key (upstream default)
     parsed = JSON.parse(output)
-    parsed["name"].should eq("json_event")
+    parsed["fields"]["message"].should eq("json_event")
     parsed["level"].should eq("INFO")
-    parsed["user"].should eq("alice")
-    parsed["count"].should eq(42_i64) # typed: integer now
+    parsed["fields"]["user"].should eq("alice")
+    parsed["fields"]["count"].should eq(42_i64) # typed: integer now
   end
 
   it "includes timestamp in JSON output" do
@@ -1816,7 +1816,7 @@ end
 describe "FmtLayer JSON typed values" do
   it "serializes integers as JSON numbers" do
     io = IO::Memory.new
-    layer = Tracing::FmtLayer.new(io).json
+    layer = Tracing::FmtLayer.new(io).json.with_span_events(Tracing::FmtSpan::NONE)
     subscriber = Tracing::Registry.new.with(layer)
 
     Dispatch.with_default(Dispatch.new(subscriber)) do
@@ -1825,15 +1825,15 @@ describe "FmtLayer JSON typed values" do
 
     output = io.to_s.strip
     parsed = JSON.parse(output)
-    # Integers should appear as JSON numbers
+    # Integers should appear as JSON numbers (now nested under "fields")
     output.should contain("42")
-    output.should_not contain("\"42\"")
-    parsed["count"].as_i64.should eq(42)
+    output.should_not contain(%("42"))
+    parsed["fields"]["count"].as_i64.should eq(42)
   end
 
   it "serializes booleans as JSON bool" do
     io = IO::Memory.new
-    layer = Tracing::FmtLayer.new(io).json
+    layer = Tracing::FmtLayer.new(io).json.with_span_events(Tracing::FmtSpan::NONE)
     subscriber = Tracing::Registry.new.with(layer)
 
     Dispatch.with_default(Dispatch.new(subscriber)) do
@@ -1842,12 +1842,12 @@ describe "FmtLayer JSON typed values" do
 
     output = io.to_s.strip
     output.should contain("true")
-    output.should_not contain("\"true\"")
+    output.should_not contain(%("true"))
   end
 
   it "serializes floats as JSON numbers" do
     io = IO::Memory.new
-    layer = Tracing::FmtLayer.new(io).json
+    layer = Tracing::FmtLayer.new(io).json.with_span_events(Tracing::FmtSpan::NONE)
     subscriber = Tracing::Registry.new.with(layer)
 
     Dispatch.with_default(Dispatch.new(subscriber)) do
@@ -1856,7 +1856,7 @@ describe "FmtLayer JSON typed values" do
 
     output = io.to_s.strip
     output.should contain("0.5")
-    output.should_not contain("\"0.5\"")
+    output.should_not contain(%("0.5"))
   end
 end
 
@@ -2410,7 +2410,7 @@ describe "Tracing.fmt SubscriberBuilder" do
     end
 
     output = io.to_s.strip
-    JSON.parse(output)["name"].should eq("json_test")
+    JSON.parse(output)["fields"]["message"].should eq("json_test")
   end
 
   it "builder with_max_level sets the default level filter" do
@@ -2458,5 +2458,112 @@ describe "Tracing.fmt SubscriberBuilder" do
     end
 
     io.to_s.should contain("\e[")
+  end
+end
+
+# RED tests — JSON format options (ported from upstream fmt/format/json.rs)
+describe "FmtLayer JSON options" do
+  it "default JSON nests fields under 'fields' key" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("nested_test", key: "value")
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["fields"].should_not be_nil
+    json["fields"]["message"].should eq("nested_test")
+    json["fields"]["key"].should eq("value")
+  end
+
+  it "flatten_event(true) puts event fields at root level" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+      .flatten_event(true)
+      .with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("flat_test", key: "value")
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["fields"]?.should be_nil
+    json["name"].should eq("flat_test")
+    json["key"].should eq("value")
+  end
+
+  it "with_current_span includes span name by default" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+      .with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::INFO, "json_parent_span")
+      s.in_scope { info!("span_test") }
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["span"].should eq("json_parent_span")
+  end
+
+  it "with_current_span(false) omits span field" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+      .with_current_span(false)
+      .with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = span!(Level::INFO, "hidden_span")
+      s.in_scope { info!("no_span_test") }
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["span"]?.should be_nil
+    json["fields"]["message"].should eq("no_span_test")
+  end
+
+  it "default JSON omits event name at root level" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("no_name_test")
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["name"]?.should be_nil
+  end
+
+  it "builder delegates JSON options" do
+    io = IO::Memory.new
+    subscriber = Tracing.fmt
+      .with_writer(io)
+      .without_time
+      .json
+      .flatten_event(true)
+      .with_current_span(false)
+      .finish
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      info!("builder_json_test", val: 42)
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["fields"]?.should be_nil
+    json["span"]?.should be_nil
+    json["name"].should eq("builder_json_test")
+    json["val"].as_i.should eq(42)
   end
 end

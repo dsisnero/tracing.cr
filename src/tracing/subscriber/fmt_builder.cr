@@ -86,6 +86,21 @@ module Tracing
       self
     end
 
+    def flatten_event(flatten : Bool) : self
+      @layer.flatten_event(flatten)
+      self
+    end
+
+    def with_current_span(show : Bool) : self
+      @layer.with_current_span(show)
+      self
+    end
+
+    def with_span_list(show : Bool) : self
+      @layer.with_span_list(show)
+      self
+    end
+
     def with_max_level(filter : LevelFilter) : self
       @filter = filter
       self

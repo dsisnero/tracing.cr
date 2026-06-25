@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 255 specs across 13 sub-crates.**
+**Total: 261 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -108,6 +108,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] FmtWriter::OrElse — fallback to second writer when first returns NoopWriter (`.or_else`)
 - [x] FmtSubscriberBuilder — builder pattern with delegate methods + `finish`/`init`/`try_init`
 - [x] Tracing.fmt — entry point returning a default-configured `FmtSubscriberBuilder`
+- [x] FmtLayer#flatten_event / #with_current_span — JSON format options matching upstream defaults
 
 ## Done (sub-crates)
 
@@ -175,7 +176,8 @@ so **verify each against `src/` before starting**.
 - [ ] `FormatEvent` / `FormatFields` traits + `FmtContext` (pluggable formatting; currently hardcoded in `FmtLayer`)
 - [ ] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
 - [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
-- [ ] `Json` options: `flatten_event`, `with_current_span`, `with_span_list` (+ `JsonFields` / `JsonVisitor`)
+- [x] `Json` options: `flatten_event`, `with_current_span` (span list deferred — needs `FormattedFields` infra)
+- [ ] `JsonFields` / `JsonVisitor` — rich span objects in JSON (needs `FormattedFields`)
 - [x] `FmtLayer#with_thread_ids`, `#with_thread_names`
 - [x] `FmtLayer#without_time`, `#with_test_writer`
 - [x] `TestWriter` — output-capture writer for unit tests
