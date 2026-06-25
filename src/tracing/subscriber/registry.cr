@@ -113,6 +113,7 @@ module Tracing
       @mutex.synchronize do
         if data = @spans[id.into_u64]?
           data.ref_count += 1
+          @spans[id.into_u64] = data
         end
       end
       id
@@ -125,6 +126,8 @@ module Tracing
           if data.ref_count <= 0
             @spans.delete(id.into_u64)
             return true
+          else
+            @spans[id.into_u64] = data
           end
         end
       end
