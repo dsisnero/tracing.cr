@@ -689,8 +689,8 @@ tracing-subscriber/src/fmt/fmt_layer.rs::func::with_span_events	func	missing	-	a
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_span_list	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_target	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::with_test_writer	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/fmt_layer.rs::func::with_thread_ids	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/fmt_layer.rs::func::with_thread_names	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/fmt_layer.rs::func::with_thread_ids	func	ported	src/tracing/subscriber/fmt.cr	FmtLayer#with_thread_ids (fiber id)
+tracing-subscriber/src/fmt/fmt_layer.rs::func::with_thread_names	func	ported	src/tracing/subscriber/fmt.cr	FmtLayer#with_thread_names (fiber name)
 tracing-subscriber/src/fmt/fmt_layer.rs::func::without_time	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::writer	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/fmt_layer.rs::func::writer_mut	func	missing	-	auto-generated
@@ -758,8 +758,8 @@ tracing-subscriber/src/fmt/format/mod.rs::func::with_line_number	func	missing	-	
 tracing-subscriber/src/fmt/format/mod.rs::func::with_source_location	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/format/mod.rs::func::with_span_list	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/format/mod.rs::func::with_target	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/format/mod.rs::func::with_thread_ids	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/format/mod.rs::func::with_thread_names	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/format/mod.rs::func::with_thread_ids	func	ported	src/tracing/subscriber/fmt.cr	collapsed into FmtLayer
+tracing-subscriber/src/fmt/format/mod.rs::func::with_thread_names	func	ported	src/tracing/subscriber/fmt.cr	collapsed into FmtLayer
 tracing-subscriber/src/fmt/format/mod.rs::func::without_time	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/format/mod.rs::func::write_char	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/format/mod.rs::func::write_fmt	func	missing	-	auto-generated
@@ -827,8 +827,8 @@ tracing-subscriber/src/fmt/mod.rs::func::with_span_events	func	missing	-	auto-ge
 tracing-subscriber/src/fmt/mod.rs::func::with_span_list	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::with_target	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::func::with_test_writer	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_thread_ids	func	missing	-	auto-generated
-tracing-subscriber/src/fmt/mod.rs::func::with_thread_names	func	missing	-	auto-generated
+tracing-subscriber/src/fmt/mod.rs::func::with_thread_ids	func	ported	src/tracing/subscriber/fmt.cr	collapsed into FmtLayer
+tracing-subscriber/src/fmt/mod.rs::func::with_thread_names	func	ported	src/tracing/subscriber/fmt.cr	collapsed into FmtLayer
 tracing-subscriber/src/fmt/mod.rs::func::without_time	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::method::Subscriber.builder	method	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::method::SubscriberBuilder.finish	method	missing	-	auto-generated

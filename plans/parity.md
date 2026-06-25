@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 219 specs across 13 sub-crates.**
+**Total: 223 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -73,6 +73,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] NoOpLayer + Nil-as-Layer
 - [x] FmtLayer (compact, pretty, JSON, ANSI)
 - [x] FmtLayer.with_target, .with_level, .with_span_events
+- [x] FmtLayer.with_thread_ids, .with_thread_names (fiber id/name)
 - [x] FmtLayer.with_timer (FormatTime: SystemTime, Uptime)
 - [x] DateTime (musl-based ISO 8601, full i64 range)
 - [x] FmtLayer.make_writer (dynamic writer block)
@@ -162,7 +163,7 @@ so **verify each against `src/` before starting**.
 - [ ] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
 - [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
 - [ ] `Json` options: `flatten_event`, `with_current_span`, `with_span_list` (+ `JsonFields` / `JsonVisitor`)
-- [ ] `FmtLayer#with_thread_ids`, `#with_thread_names`
+- [x] `FmtLayer#with_thread_ids`, `#with_thread_names`
 - [ ] `FmtLayer#without_time`, `#with_test_writer`
 - [ ] `MakeWriter` / `MakeWriterExt` traits + combinators (`with_max_level`, `or_else`, `Tee`, `BoxMakeWriter`)
 - [ ] `fmt::Subscriber` builder + `init` / `try_init`, `reload_handle`, `with_filter_reloading`
@@ -245,6 +246,12 @@ the relevant source files; omitted symbols are marked `skipped` in
   upstream orders by creation time (with a filename-date fallback), which
   `File::Info` does not expose on Crystal.
 
+### tracing-subscriber — `fmt` thread info
+
+- `FmtLayer#with_thread_ids` / `#with_thread_names` show the current **fiber**'s
+  object id / name — Crystal has no OS-thread-per-task model, so threads map to
+  fibers. `with_thread_ids` prints the fiber `object_id`, not an OS thread id.
+
 ### tracing-subscriber — `fmt::time`
 
 - `chrono` / `time` crate formatters are not ported (no Crystal equivalent);
@@ -255,5 +262,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 219 examples
+crystal spec   # 223 examples
 ```

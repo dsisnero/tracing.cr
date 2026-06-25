@@ -29,6 +29,8 @@ module Tracing
     @make_writer : (-> IO)?
     @use_ansi : Bool
     @timer : FmtTime::FormatTime?
+    @show_thread_ids : Bool
+    @show_thread_names : Bool
 
     def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
       @io = io
@@ -42,6 +44,8 @@ module Tracing
       @make_writer = nil
       @use_ansi = false
       @timer = FmtTime.time
+      @show_thread_ids = false
+      @show_thread_names = false
     end
 
     def compact : self
@@ -108,6 +112,17 @@ module Tracing
               end
             end
           end
+
+          if @show_thread_names
+            if name = Fiber.current.name
+              json.field "threadName", name
+            elsif !@show_thread_ids
+              json.field "threadName", Fiber.current.object_id.to_s
+            end
+          end
+          if @show_thread_ids
+            json.field "threadId", Fiber.current.object_id.to_s
+          end
         end
       end
       io << "\n"
@@ -141,6 +156,20 @@ module Tracing
       self
     end
 
+    # Display the current thread's identifier. In Crystal, threads map to
+    # fibers, so this shows the fiber's object id (see Divergences).
+    def with_thread_ids(show : Bool) : self
+      @show_thread_ids = show
+      self
+    end
+
+    # Display the current thread's name. In Crystal, threads map to fibers, so
+    # this shows the fiber's name (see Divergences).
+    def with_thread_names(show : Bool) : self
+      @show_thread_names = show
+      self
+    end
+
     def with_timer(timer : FmtTime::FormatTime?) : self
       @timer = timer
       self
@@ -155,6 +184,22 @@ module Tracing
       if t = @timer
         t.format_time(io)
         io << " "
+      end
+    end
+
+    # Writes the fiber name and/or id after the level, mirroring upstream's
+    # thread name/id display: the name is shown if present, falling back to the
+    # id when the name is absent and ids are not separately enabled.
+    private def write_thread_info(io : IO) : Nil
+      if @show_thread_names
+        if name = Fiber.current.name
+          io << name << " "
+        elsif !@show_thread_ids
+          io << Fiber.current.object_id << " "
+        end
+      end
+      if @show_thread_ids
+        io << Fiber.current.object_id << " "
       end
     end
 
@@ -208,6 +253,7 @@ module Tracing
         reset = reset_color
         io << color << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << reset << " "
       end
+      write_thread_info(io)
       if @show_target
         io << event.metadata.target << " "
       end
