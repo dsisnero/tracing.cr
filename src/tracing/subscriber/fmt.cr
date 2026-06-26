@@ -37,6 +37,7 @@ module Tracing
     @json_show_current_span : Bool
     @json_show_span_list : Bool
     @field_formatter : FmtFormat::FormatFields
+    @event_formatter : FmtFormat::FormatEvent
 
     def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
       @io = io
@@ -57,17 +58,20 @@ module Tracing
       @json_show_current_span = true
       @json_show_span_list = true
       @field_formatter = FmtFormat::DefaultFields.new
+      @event_formatter = build_event_formatter
     end
 
     def compact : self
       @compact_mode = true
       @pretty_mode = false
+      @event_formatter = build_event_formatter
       self
     end
 
     def pretty : self
       @pretty_mode = true
       @compact_mode = false
+      @event_formatter = build_event_formatter
       self
     end
 
@@ -102,6 +106,24 @@ module Tracing
     def with_make_writer(mw : FmtWriter::MakeWriter) : self
       @make_writer_obj = mw
       self
+    end
+
+    def event_format(fmt : FmtFormat::FormatEvent) : self
+      @event_formatter = fmt
+      self
+    end
+
+    private def build_event_formatter : FmtFormat::DefaultFormatEvent
+      FmtFormat::DefaultFormatEvent.new(
+        show_target: @show_target,
+        show_level: @show_level,
+        compact_mode: @compact_mode,
+        pretty_mode: @pretty_mode,
+        use_ansi: @use_ansi,
+        timer: @timer,
+        show_thread_ids: @show_thread_ids,
+        show_thread_names: @show_thread_names
+      )
     end
 
     private def write_json_event(io : IO, event : Core::Event, ctx : LayerContext) : Nil
@@ -174,16 +196,19 @@ module Tracing
 
     def with_target(show : Bool) : self
       @show_target = show
+      @event_formatter = build_event_formatter
       self
     end
 
     def with_level(show : Bool) : self
       @show_level = show
+      @event_formatter = build_event_formatter
       self
     end
 
     def with_ansi(use : Bool) : self
       @use_ansi = use
+      @event_formatter = build_event_formatter
       self
     end
 
@@ -191,6 +216,7 @@ module Tracing
     # fibers, so this shows the fiber's object id (see Divergences).
     def with_thread_ids(show : Bool) : self
       @show_thread_ids = show
+      @event_formatter = build_event_formatter
       self
     end
 
@@ -198,6 +224,7 @@ module Tracing
     # this shows the fiber's name (see Divergences).
     def with_thread_names(show : Bool) : self
       @show_thread_names = show
+      @event_formatter = build_event_formatter
       self
     end
 
@@ -218,6 +245,7 @@ module Tracing
 
     def with_timer(timer : FmtTime::FormatTime?) : self
       @timer = timer
+      @event_formatter = build_event_formatter
       self
     end
 
@@ -228,6 +256,7 @@ module Tracing
 
     def with_none_timer : self
       @timer = nil
+      @event_formatter = build_event_formatter
       self
     end
 
@@ -298,44 +327,10 @@ module Tracing
         write_json_event(io, event, ctx)
         return
       end
-      span_name = ctx.event_span(event).try(&.name) || ""
 
-      unless @compact_mode
-        write_timestamp(io)
-      end
-      if @show_level
-        color = level_color(event.metadata.level)
-        reset = reset_color
-        io << color << event.metadata.level.as_str.rjust(@compact_mode ? 0 : 5) << reset << " "
-      end
-      write_thread_info(io)
-      if @show_target
-        io << event.metadata.target << " "
-      end
-      unless span_name.empty?
-        io << span_name << ":"
-      end
-      io << event.metadata.name
-
-      if @pretty_mode
-        io << ":\n"
-      end
-
-      vs = event.values
-      if !vs.empty?
-        if @pretty_mode
-          collector = PrettyFieldCollector.new
-          vs.visit(collector)
-          collector.entries.each { |line| io << "  " << line << "\n" }
-        else
-          io << "{"
-          fwriter = FmtFormat::Writer.new(io)
-          @field_formatter.format_fields(fwriter, vs)
-          io << "}"
-        end
-      end
-
-      io << "\n" unless @pretty_mode
+      writer = FmtFormat::Writer.new(io, @use_ansi)
+      fmt_ctx = FmtFormat::FmtContext.new(ctx, @field_formatter, event)
+      @event_formatter.format_event(fmt_ctx, writer, event)
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil

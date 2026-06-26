@@ -2656,7 +2656,7 @@ private class TestFormatFields < Tracing::FmtFormat::FormatFields
 end
 
 private class TestFormatEvent < Tracing::FmtFormat::FormatEvent
-  def format_event(ctx : Tracing::LayerContext, writer : Tracing::FmtFormat::Writer, event : Tracing::Core::Event) : Nil
+  def format_event(ctx : Tracing::FmtFormat::FmtContext, writer : Tracing::FmtFormat::Writer, event : Tracing::Core::Event) : Nil
   end
 end
 
@@ -2691,5 +2691,78 @@ describe "FmtFormat DefaultFields" do
 
     formatter.format_fields(writer, vs)
     io.to_s.strip.should match(/a=1\s+b=2/) # a=1 b=2 (space separator)
+  end
+end
+
+# RED tests — FmtContext + DefaultFormatEvent (ported from upstream fmt/fmt_layer.rs)
+describe "FmtFormat FmtContext" do
+  it "wraps LayerContext and provides field_format access" do
+    field_fmt = Tracing::FmtFormat::DefaultFields.new
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+    meta = Tracing::Metadata.new("ev", "test", Tracing::Level::INFO)
+    vs = Tracing::Field::ValueSet.new(Tracing::Field::FieldSet.of([] of String, Tracing::Callsite::Identifier.new))
+    event = Tracing::Core::Event.new(meta, vs)
+
+    fmt_ctx = Tracing::FmtFormat::FmtContext.new(ctx, field_fmt, event)
+    fmt_ctx.field_format.should be(field_fmt)
+  end
+end
+
+describe "FmtFormat DefaultFormatEvent" do
+  it "formats event metadata (level, name) without fields" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    fmt = Tracing::FmtFormat::DefaultFormatEvent.new(
+      show_target: false,
+      show_level: true,
+      compact_mode: false,
+      pretty_mode: false,
+      use_ansi: false,
+      timer: nil,
+      show_thread_ids: false,
+      show_thread_names: false
+    )
+
+    meta = Tracing::Metadata.new("my_event", "my_target", Tracing::Level::INFO)
+    vs = Tracing::Field::ValueSet.new(Tracing::Field::FieldSet.of([] of String, Tracing::Callsite::Identifier.new))
+    event = Tracing::Core::Event.new(meta, vs)
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+    field_fmt = Tracing::FmtFormat::DefaultFields.new
+    fmt_ctx = Tracing::FmtFormat::FmtContext.new(ctx, field_fmt, event)
+
+    fmt.format_event(fmt_ctx, writer, event)
+    io.to_s.should contain("INFO")
+    io.to_s.should contain("my_event")
+  end
+
+  it "formats event with fields using field_formatter" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    fmt = Tracing::FmtFormat::DefaultFormatEvent.new(
+      show_target: false,
+      show_level: false,
+      compact_mode: false,
+      pretty_mode: false,
+      use_ansi: false,
+      timer: nil,
+      show_thread_ids: false,
+      show_thread_names: false
+    )
+
+    fs = Tracing::Field::FieldSet.of(["user", "count"], Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+    vs.record(Tracing::Field::Field.new("user"), "alice")
+    vs.record(Tracing::Field::Field.new("count"), 42_i64)
+    meta = Tracing::Metadata.new("field_event", "test", Tracing::Level::INFO)
+    event = Tracing::Core::Event.new(meta, vs)
+    ctx = Tracing::LayerContext.new(Tracing::Core::NoSubscriber.new)
+    field_fmt = Tracing::FmtFormat::DefaultFields.new
+    fmt_ctx = Tracing::FmtFormat::FmtContext.new(ctx, field_fmt, event)
+
+    fmt.format_event(fmt_ctx, writer, event)
+    output = io.to_s
+    output.should contain("field_event")
+    output.should contain("user=alice")
+    output.should contain("count=42")
   end
 end
