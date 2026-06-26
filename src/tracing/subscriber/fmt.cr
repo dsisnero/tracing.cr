@@ -36,6 +36,7 @@ module Tracing
     @json_flatten_event : Bool
     @json_show_current_span : Bool
     @json_show_span_list : Bool
+    @field_formatter : FmtFormat::FormatFields
 
     def initialize(io : IO = STDOUT, filter : LevelFilterLayer? = nil)
       @io = io
@@ -55,6 +56,7 @@ module Tracing
       @json_flatten_event = false
       @json_show_current_span = true
       @json_show_span_list = true
+      @field_formatter = FmtFormat::DefaultFields.new
     end
 
     def compact : self
@@ -326,11 +328,10 @@ module Tracing
           vs.visit(collector)
           collector.entries.each { |line| io << "  " << line << "\n" }
         else
-          collector = FieldCollector.new
-          vs.visit(collector)
-          if collector.fields
-            io << "{" << collector.fields << "}"
-          end
+          io << "{"
+          fwriter = FmtFormat::Writer.new(io)
+          @field_formatter.format_fields(fwriter, vs)
+          io << "}"
         end
       end
 

@@ -2659,3 +2659,37 @@ private class TestFormatEvent < Tracing::FmtFormat::FormatEvent
   def format_event(ctx : Tracing::LayerContext, writer : Tracing::FmtFormat::Writer, event : Tracing::Core::Event) : Nil
   end
 end
+
+# RED tests — DefaultFormatFields implementation
+describe "FmtFormat DefaultFields" do
+  it "formats fields as key=value pairs" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    formatter = Tracing::FmtFormat::DefaultFields.new
+
+    fs = Tracing::Field::FieldSet.of(["user", "count"], Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+    user_field = Tracing::Field::Field.new("user")
+    count_field = Tracing::Field::Field.new("count")
+    vs.record(user_field, "alice")
+    vs.record(count_field, 42_i64)
+
+    formatter.format_fields(writer, vs)
+    io.to_s.should contain("user=alice")
+    io.to_s.should contain("count=42")
+  end
+
+  it "separates multiple fields with spaces" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    formatter = Tracing::FmtFormat::DefaultFields.new
+
+    fs = Tracing::Field::FieldSet.of(["a", "b"], Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+    vs.record(Tracing::Field::Field.new("a"), "1")
+    vs.record(Tracing::Field::Field.new("b"), "2")
+
+    formatter.format_fields(writer, vs)
+    io.to_s.strip.should match(/a=1\s+b=2/) # a=1 b=2 (space separator)
+  end
+end
