@@ -334,11 +334,45 @@ module Tracing
     end
 
     def on_new_span(attrs : Core::Span::Attributes, id : Core::Span::Id, ctx : LayerContext) : Nil
+      span_ref = ctx.span(id)
+      if span_ref
+        exts = span_ref.extensions
+        if exts && exts.get(FmtFormat::FormattedFields).nil?
+          buf_io = IO::Memory.new
+          buf_writer = FmtFormat::Writer.new(buf_io)
+          @field_formatter.format_fields(buf_writer, attrs.values)
+          if !buf_io.to_s.empty?
+            exts.insert(FmtFormat::FormattedFields.new(fields: buf_io.to_s.strip, was_ansi: @use_ansi || false))
+          end
+        end
+      end
+
       return unless @span_events.new?
       io = resolve_io
       write_timestamp(io)
       io << attrs.metadata.level.as_str.rjust(5) << " "
       io << "new " << attrs.metadata.name << "\n"
+    end
+
+    def on_record(id : Core::Span::Id, values : Core::Span::Record, ctx : LayerContext) : Nil
+      span_ref = ctx.span(id)
+      if span_ref
+        exts = span_ref.extensions
+        if exts
+          existing = exts.get(FmtFormat::FormattedFields)
+          buf_io = IO::Memory.new
+          buf_io << existing.fields if existing
+          buf_io << " " if existing && !existing.fields.empty?
+          buf_writer = FmtFormat::Writer.new(buf_io)
+          @field_formatter.format_fields(buf_writer, values.values)
+          new_fields = buf_io.to_s.strip
+          if existing
+            existing.fields = new_fields
+          elsif !new_fields.empty?
+            exts.insert(FmtFormat::FormattedFields.new(fields: new_fields, was_ansi: @use_ansi || false))
+          end
+        end
+      end
     end
 
     def on_enter(id : Core::Span::Id, ctx : LayerContext) : Nil

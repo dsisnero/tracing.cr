@@ -2766,3 +2766,59 @@ describe "FmtFormat DefaultFormatEvent" do
     output.should contain("count=42")
   end
 end
+
+# RED tests — FormattedFields span field storage (ported from upstream fmt/fmt_layer.rs)
+describe "FmtFormat FormattedFields" do
+  it "stores and retrieves from Extensions" do
+    ext = Tracing::Extensions.new
+    ff = Tracing::FmtFormat::FormattedFields.new(fields: "x=1 y=2")
+    ext.insert(ff)
+
+    retrieved = ext.get(Tracing::FmtFormat::FormattedFields)
+    retrieved.should_not be_nil
+    retrieved.not_nil!.fields.should eq("x=1 y=2")
+  end
+
+  it "tracks ANSI state" do
+    ff = Tracing::FmtFormat::FormattedFields.new(fields: "z=3", was_ansi: true)
+    ff.was_ansi?.should be_true
+  end
+end
+
+describe "FmtLayer span field storage" do
+  it "on_new_span formats and stores span fields in extensions" do
+    registry = Tracing::Registry.new
+    layer = Tracing::FmtLayer.new(IO::Memory.new).with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = registry.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Tracing.span(Level::INFO, "fields_span", answer: 42, user: "alice")
+      s.in_scope { info!("ev") }
+
+      sid = s.id.not_nil!
+      data = registry.span_data(sid)
+      data.should_not be_nil
+      ff = data.not_nil!.extensions.get(Tracing::FmtFormat::FormattedFields)
+      ff.should_not be_nil
+      ff.not_nil!.fields.should contain("answer=42")
+    end
+  end
+
+  it "on_record appends to existing FormattedFields" do
+    registry = Tracing::Registry.new
+    layer = Tracing::FmtLayer.new(IO::Memory.new).with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = registry.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Tracing.span(Level::INFO, "record_span", x: 1)
+      sid = s.id.not_nil!
+
+      s.record(y: 2)
+
+      data = registry.span_data(sid)
+      ff = data.not_nil!.extensions.get(Tracing::FmtFormat::FormattedFields)
+      ff.not_nil!.fields.should contain("x=1")
+      ff.not_nil!.fields.should contain("y=2")
+    end
+  end
+end

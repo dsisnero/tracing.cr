@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 272 specs across 13 sub-crates.**
+**Total: 276 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -117,6 +117,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] FmtFormat::FmtContext — wraps LayerContext + field formatter + event for FormatEvent
 - [x] FmtFormat::DefaultFormatEvent — full event formatter (level, target, fields, threads, ANSI)
 - [x] FmtLayer#event_format — pluggable FormatEvent replacement; option setters rebuild formatter
+- [x] FmtFormat::FormattedFields — span field storage in Extensions; on_new_span + on_record
 
 ## Done (sub-crates)
 
@@ -184,7 +185,7 @@ so **verify each against `src/` before starting**.
 - [x] `FormatEvent` / `FormatFields` abstract classes + `Writer` struct (pluggable formatting foundation)
 - [x] `FmtFormat::DefaultFields` — default field formatter (key=value pairs); wired into `FmtLayer`
 - [x] `FmtFormat::FmtContext` + `DefaultFormatEvent` — FmtLayer delegates event formatting
-- [ ] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
+- [x] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
 - [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
 - [x] `Json` options: `flatten_event`, `with_current_span` (span list deferred — needs `FormattedFields` infra)
 - [ ] `JsonFields` / `JsonVisitor` — rich span objects in JSON (needs `FormattedFields`)
@@ -290,5 +291,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 272 examples
+crystal spec   # 276 examples
 ```
