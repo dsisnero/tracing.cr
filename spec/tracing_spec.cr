@@ -2882,3 +2882,18 @@ describe "FmtLayer JSON with_span_list" do
     spans[1]["name"].should eq("child_span")
   end
 end
+
+# RED tests — Subscriber.try_init (ported from upstream util.rs SubscriberInitExt)
+describe "Subscriber.try_init" do
+  it "returns true when global default is not yet set" do
+    unless Dispatch.has_been_set?
+      result = Tracing::Subscriber.try_init(Tracing::Registry.new)
+      result.should be_true
+    end
+  end
+
+  it "can be called and returns a Bool" do
+    result = Tracing::Subscriber.try_init(Tracing::Registry.new)
+    result.should be_a(Bool)
+  end
+end

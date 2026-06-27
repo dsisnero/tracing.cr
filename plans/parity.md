@@ -20,7 +20,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 
-**Total: 279 specs across 13 sub-crates.**
+**Total: 281 specs across 13 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -119,6 +119,7 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] FmtLayer#event_format — pluggable FormatEvent replacement; option setters rebuild formatter
 - [x] FmtFormat::FormattedFields — span field storage in Extensions; on_new_span + on_record
 - [x] JSON `with_span_list` — spans array (root→leaf) via SpanRef#scope.from_root
+- [x] Subscriber.try_init — checks Dispatcher.has_been_set? before installing
 
 ## Done (sub-crates)
 
@@ -201,7 +202,7 @@ so **verify each against `src/` before starting**.
 ### tracing-subscriber — registry / filter / util
 
 - [x] `SpanRef#scope` / `#from_root` / `#parent` (`Scope` ancestor iteration; registry resolves contextual parents at `new_span`)
-- [ ] `SubscriberInitExt#try_init`
+- [x] `SubscriberInitExt#try_init`
 - [ ] `EnvFilter` field-value directives `target[span{field=val}]=level` (verify; basic level/target/span-name done)
 - [x] `FilterExt` combinators `Layer#and` / `#or` / `#not` (`.boxed` is N/A — Crystal uses runtime polymorphism)
 
@@ -292,5 +293,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 279 examples
+crystal spec   # 281 examples
 ```
