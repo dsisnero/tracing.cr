@@ -2822,3 +2822,63 @@ describe "FmtLayer span field storage" do
     end
   end
 end
+
+# RED tests — with_span_list JSON option (ported from upstream fmt/format/json.rs)
+describe "FmtLayer JSON with_span_list" do
+  it "includes spans array in JSON by default" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+      .with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Tracing.span(Level::INFO, "parent_span")
+      s.in_scope { info!("inside") }
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["spans"].should_not be_nil
+    json["spans"].as_a.size.should eq(1)
+    json["spans"].as_a[0]["name"].should eq("parent_span")
+  end
+
+  it "with_span_list(false) omits spans array" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+      .with_span_list(false)
+      .with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Tracing.span(Level::INFO, "hidden_span")
+      s.in_scope { info!("inside") }
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    json["spans"]?.should be_nil
+  end
+
+  it "shows all spans from root to leaf" do
+    io = IO::Memory.new
+    layer = Tracing::FmtLayer.new(io).json.without_time
+      .with_span_events(Tracing::FmtSpan::NONE)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s1 = Tracing.span(Level::INFO, "root_span")
+      s1.in_scope do
+        s2 = Tracing.span(Level::INFO, "child_span")
+        s2.in_scope { info!("deep") }
+      end
+    end
+
+    output = io.to_s.strip
+    json = JSON.parse(output)
+    spans = json["spans"].as_a
+    spans.size.should eq(2)
+    spans[0]["name"].should eq("root_span")
+    spans[1]["name"].should eq("child_span")
+  end
+end

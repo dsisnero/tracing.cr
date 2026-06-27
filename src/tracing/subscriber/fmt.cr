@@ -127,7 +127,8 @@ module Tracing
     end
 
     private def write_json_event(io : IO, event : Core::Event, ctx : LayerContext) : Nil
-      span_name = (@json_show_current_span ? ctx.event_span(event).try(&.name) : nil)
+      span_ref = ctx.event_span(event)
+      span_name = (@json_show_current_span ? span_ref.try(&.name) : nil)
       vs = event.values
 
       obj = {} of String => JSON::Any
@@ -158,6 +159,16 @@ module Tracing
           fields[key] = any_val
         end
         obj["fields"] = JSON::Any.new(fields)
+      end
+
+      if @json_show_span_list && span_ref
+        spans = [] of JSON::Any
+        span_ref.scope.from_root.each do |span|
+          span_obj = {} of String => JSON::Any
+          span_obj["name"] = JSON::Any.new(span.name)
+          spans << JSON::Any.new(span_obj)
+        end
+        obj["spans"] = JSON::Any.new(spans)
       end
 
       if @show_target
