@@ -1,19 +1,25 @@
 # tracing
 
-A Crystal port of [tokio-rs/tracing](https://github.com/tokio-rs/tracing) — structured,
-event-based diagnostics for Crystal programs.
+A Crystal port of [tokio-rs/tracing](https://github.com/tokio-rs/tracing):
+structured, event-based diagnostics for Crystal programs.
 
-**Upstream pinned at**: `tracing-0.1.44` (commit `2d55f6f`)
+- Current version: `0.5.1`
+- Upstream pin: `tracing-0.1.44` (`2d55f6f`)
+- Current status: core facade, subscriber stack, appender, flame, log bridge,
+  mock, error/span trace, attributes, concurrency helpers, and OpenTelemetry
+  bridge are all shipped in `src/`
 
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
-| [Architecture](docs/architecture.md) | Crate structure, data flow, file map |
-| [Development](docs/development.md) | Setup, daily workflow, commands |
-| [Coding Guidelines](docs/coding-guidelines.md) | Code style and conventions |
-| [Testing](docs/testing.md) | Test commands and patterns |
-| [PR Workflow](docs/pr-workflow.md) | Commits, PRs, review process |
+| [Architecture](docs/architecture.md) | Runtime structure, data flow, public subsystems |
+| [Development](docs/development.md) | Setup, source tree, local workflow |
+| [Coding Guidelines](docs/coding-guidelines.md) | Porting and Crystal style rules |
+| [Testing](docs/testing.md) | Quality gates and test organization |
+| [PR Workflow](docs/pr-workflow.md) | Review checklist and branch/commit conventions |
+| [Changelog](CHANGELOG.md) | Release history |
+| [Parity Status](plans/parity.md) | Shipped feature ledger vs upstream |
 
 ## Installation
 
@@ -32,295 +38,277 @@ shards install
 ```crystal
 require "tracing"
 
-# Set up a subscriber with formatted output
-Tracing::Subscriber.set_global_default(
-  Tracing::Registry.default
-    .with(Tracing::FmtLayer.new(STDOUT).compact)
-)
+Tracing.fmt
+  .compact
+  .with_target(true)
+  .with_max_level(Tracing::LevelFilter::INFO)
+  .init
 
-# Record spans and events
-span = span!(Level::INFO, "my_operation", service: "api")
-span.in_scope do
-  info!("processing", user_id: 42)
+span!(Tracing::Level::INFO, "request", method: "GET").in_scope do
+  info!("request.started", user_id: 42)
 end
 ```
+
+## Public Surface
+
+The current entrypoint is [src/tracing.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing.cr:1).
+It requires and re-exports:
+
+- `src/tracing/core/` for metadata, fields, spans, events, subscribers, and dispatch
+- `src/tracing/` facade files for `Tracing.span`, `Tracing.event`, `span!`, `info!`, and `Tracing::Span`
+- `src/tracing/subscriber/` for registry, layers, filters, formatting, reload, appenders, flame, log bridge, mock subscriber, and `SpanTrace`
+- `src/tracing/opentelemetry/layer.cr` for `Tracing::OpenTelemetryLayer`
+- `src/tracing/concurrency*` for fiber and channel helpers
 
 ## Core Concepts
 
 ### Spans
 
-A span represents a period of time with a beginning and end.
-See `src/tracing/facade_span.cr` for the `Tracing::Span` handle.
+Spans represent work with duration and context.
 
 ```crystal
-# Create a span with initial fields
-span = span!(Level::INFO, "request", method: "GET")
+span = span!(Tracing::Level::INFO, "request", method: "GET")
 
-# Enter the span (auto-exits via ensure block)
 span.in_scope do
-  # Work happens inside the span context
-  span.record(progress: "50%")
+  span.record(path: "/users")
+  info!("request.authenticated", user: "alice")
 end
 ```
 
 ### Events
 
-An event represents a moment in time within a span context.
-See `src/tracing/facade_dsl.cr` for the DSL methods.
+Events are point-in-time records, optionally attached to the current span.
 
 ```crystal
-# Outside any span
-info!("server_started", port: 8080)
+info!("boot", port: 8080)
 
-# Inside a span
-span!(Level::DEBUG, "db_query").in_scope do
-  debug!("query_executed", rows: 100, duration_ms: 12)
+span!(Tracing::Level::DEBUG, "db_query").in_scope do
+  debug!("query.executed", rows: 100, duration_ms: 12)
 end
 ```
 
-### Levels
+### Subscribers and Layers
 
-Verbosity ordered from most to least verbose:
-`TRACE > DEBUG > INFO > WARN > ERROR`
-
-```crystal
-Level::TRACE > Level::DEBUG   # => true
-Level::ERROR < Level::WARN    # => true
-```
-
-LevelFilter adds `OFF` to completely disable:
-```crystal
-LevelFilter::OFF < Level::TRACE  # => true (OFF blocks everything)
-```
-
-See `src/tracing/types.cr` for the full comparison semantics.
-
-### Subscribers
-
-Subscribers consume trace data. Register one to start recording.
-See `src/tracing/subscriber.cr` for the trait.
+`Tracing::Registry` stores span state. `Tracing::Layer` implementations observe
+that state and render or export it.
 
 ```crystal
-# Built-in Registry with a formatting layer
-Tracing::Subscriber.set_global_default(
-  Tracing::Registry.default
-    .with(Tracing::FmtLayer.new(STDOUT)
-      .with_target(true)
-      .with_ansi(true)
-      .compact)
-    .with(Tracing::EnvFilter.from_env)
-)
+registry = Tracing::Registry.default
+  .with(Tracing::FmtLayer.new(STDOUT).compact)
+  .with(Tracing::EnvFilter.new("info,my_app=debug"))
+
+registry.init
 ```
 
-## FmtLayer Output
+## Formatting
 
-Three output modes via `src/tracing-subscriber/fmt.cr`:
+The formatting layer lives at [src/tracing/subscriber/fmt.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/fmt.cr:1).
+There are two common entrypoints:
 
-**Default** (timestamped single-line):
-```
-2026-05-28T22:00:00.000Z  INFO my_span:request{method=GET}
-```
+- `Tracing.fmt` for the builder API
+- `Tracing::FmtLayer.new(...)` for direct layer composition
 
-**Compact** (`.compact`, no timestamps):
-```
-INFO request{method=GET}
-```
-
-**Pretty** (`.pretty`, multi-line):
-```
-2026-05-28T22:00:00.000Z  INFO request:
-  method: GET
-  path: /users
-```
-
-## Filtering
-
-Four filter types from `src/tracing-subscriber/`:
+### Builder API
 
 ```crystal
-# Level threshold
-FmtLayer.new.with_filter(LevelFilter::INFO)
-
-# Environment variable parsing
-EnvFilter.new("info,my_crate=debug,http=trace")
-EnvFilter.from_env  # reads $TRACE_LOG
-
-# Closure-based
-FilterFn.new { |meta| meta.level <= Level::WARN }
-
-# Programmatic target matching
-Targets.new
-  .with_target("my_crate", Level::DEBUG)
-  .with_target("http", Level::TRACE)
-  .with_default(Level::INFO)
-```
-
-**Directive grammar** (`EnvFilter`):
-```
-info                         # bare level
-my_crate=debug               # target prefix + level
-my_crate::module=warn        # scoped target
-my_crate[span_name]=trace    # span-filtered
-off                          # disable all
-```
-
-## Layers
-
-Layers observe trace data. Compose with `Registry.with(layer)`.
-See `src/tracing-subscriber/layer.cr`.
-
-```crystal
-class MetricsLayer < Tracing::Layer
-  def on_event(event, ctx)
-    # record metrics
-  end
-
-  def on_new_span(attrs, id, ctx)
-    # track span creation
-  end
-end
-
-Registry.default
-  .with(MetricsLayer.new)
-  .with(FmtLayer.new(STDOUT).compact)
+Tracing.fmt
+  .pretty
+  .with_target(true)
+  .with_thread_ids(true)
+  .with_max_level(Tracing::LevelFilter::DEBUG)
   .init
 ```
 
-### Layer Composition
+### JSON Output
 
 ```crystal
-# Chain layers
-registry.with(security_layer).with(fmt_layer)
-
-# Combine layers with filtering
-fmt_layer.and_then(LevelFilterLayer.new(LevelFilter::INFO))
-
-# Conditional layers (nil is a no-op)
-debug ? debug_layer : nil
+Tracing.fmt
+  .json
+  .flatten_event(true)
+  .with_current_span(true)
+  .with_span_list(true)
+  .init
 ```
 
-## Span Data Lookup
+Current JSON controls:
 
-Layers can query stored span data via the context.
-See `src/tracing-subscriber/lookup_span.cr`.
+- `flatten_event(true)` moves event fields to the root object
+- `with_current_span(false)` omits the current span name
+- `with_span_list(false)` omits the root-to-leaf span list
+
+## Filtering
+
+The current filter surface lives under `src/tracing/subscriber/`.
 
 ```crystal
-class SpanLogger < Tracing::Layer
-  def on_event(event, ctx)
-    if span = ctx.event_span(event)
-      puts "Event in span: #{span.name}"
-      if data = span.extensions
-        puts "  user: #{data.get(String)}"
-      end
-    end
-  end
-end
+# Level threshold
+fmt = Tracing::FmtLayer.new(STDOUT).with_filter(Tracing::LevelFilter::INFO)
+
+# Environment grammar
+env = Tracing::EnvFilter.new("info,my_app=debug,my_app[db]=trace")
+
+# Closure-based
+warn_only = Tracing::FilterFn.new { |meta| meta.level <= Tracing::Level::WARN }
+
+# Programmatic targets
+targets = Tracing::Targets.new
+  .with_target("my_app", Tracing::Level::DEBUG)
+  .with_default(Tracing::Level::INFO)
 ```
 
-## Per-Span Extensions
-
-Store arbitrary per-span data via `src/tracing-subscriber/extensions.cr`:
+Filter combinators are also shipped:
 
 ```crystal
-class TimingLayer < Tracing::Layer
-  def on_new_span(attrs, id, ctx)
-    if span = ctx.span(id)
-      span.extensions_mut.try(&.insert(Time.utc))
-    end
-  end
-
-  def on_exit(id, ctx)
-    if span = ctx.span(id)
-      start = span.extensions.try(&.get(Time))
-      elapsed = Time.utc - start if start
-    end
-  end
-end
+combined = targets.and(env.not)
 ```
 
-## Dynamic Writers
+## Runtime Reloading
 
-Enable file rotation via `make_writer` block in `src/tracing-subscriber/fmt.cr`:
+The reload layer is implemented in [src/tracing/subscriber/reload.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/reload.cr:1).
 
 ```crystal
-FmtLayer.make_writer { File.open("app.log", "a") }
+builder = Tracing.fmt
+  .with_max_level(Tracing::LevelFilter::INFO)
+  .with_filter_reloading
+
+builder.init
+
+handle = builder.reload_handle
+handle.reload(Tracing::LevelFilterLayer.new(Tracing::LevelFilter::DEBUG))
 ```
 
-## JSON Output
+## Crystal Log Bridge
 
-Output events as JSON lines via `src/tracing-subscriber/fmt.cr`:
+Forward Crystal `Log` entries into tracing with
+[src/tracing/subscriber/log_tracer.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/log_tracer.cr:1).
 
 ```crystal
-FmtLayer.new(STDOUT).json
-# => {"timestamp":"2026-...","level":"INFO","name":"request","user":"alice"}
+Tracing.fmt.compact.init
+Log.setup(:trace, Tracing::LogTracer.new)
+
+Log.info { "routed to tracing" }
 ```
+
+## Non-Blocking Output and Rotation
+
+Appender support lives in [src/tracing/subscriber/appender.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/appender.cr:1).
+
+```crystal
+appender = Tracing::RollingFileAppender
+  .builder
+  .rotation(Tracing::Rotation::DAILY)
+  .filename_prefix("app")
+  .filename_suffix("log")
+  .build("logs")
+
+non_blocking, guard = Tracing::NonBlocking.new(appender)
+
+Tracing::Registry.default
+  .with(Tracing::FmtLayer.make_writer { non_blocking.make_writer }.compact)
+  .init
+```
+
+Keep `guard` alive until shutdown so the worker can flush buffered writes.
+
+Current appender features:
+
+- `NonBlocking` worker fiber + `WorkerGuard`
+- `RollingFileAppender`
+- builder support for `rotation`, `filename_prefix`, `filename_suffix`, `max_log_files`
+
+## Flame Output
+
+`Tracing::FlameLayer` is ported in [src/tracing/subscriber/flame.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/flame.cr:1).
+It writes folded stack output for external tools such as `inferno-flamegraph`.
+
+```crystal
+flame, guard = Tracing::FlameLayer.with_file("trace.folded")
+Tracing::Registry.default.with(flame).init
+
+# ... run app ...
+# cat trace.folded | inferno-flamegraph > flame.svg
+```
+
+This is flamegraph/flamechart data, not Chrome trace format.
+Keep `guard` alive until shutdown so remaining span samples are flushed.
 
 ## OpenTelemetry
 
-Bridge tracing spans to OpenTelemetry via `src/tracing-opentelemetry/layer.cr`:
+The OpenTelemetry bridge is implemented in
+[src/tracing/opentelemetry/layer.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/opentelemetry/layer.cr:1).
 
 ```crystal
 require "opentelemetry-api"
 require "opentelemetry-sdk"
 
-OpenTelemetry.configure do |config|
-  config.service_name = "my_app"
+exporter = OpenTelemetry::Exporter.new(:io, io: STDOUT)
+provider = OpenTelemetry::TraceProvider.new(
+  service_name: "my_app",
+  exporter: exporter
+)
+
+Tracing::Registry.default
+  .with(
+    Tracing::OpenTelemetryLayer.new(provider)
+      .with_level(Tracing::Level::INFO)
+      .with_context_activation(true)
+      .with_target(true)
+  )
+  .init
+
+span!(Tracing::Level::INFO, "request").in_scope do
+  info!("request.started", user: "alice")
+end
+```
+
+Current OTel behavior:
+
+- root and child spans export on span close
+- contextual events become OTel span events
+- `otel.name`, `otel.kind`, `otel.status_code`, and `otel.status_description` are mapped from tracing fields
+- error events can update span status and emit exception-style attributes
+- context activation tracks the current trace/span on the active fiber
+
+Note: those OTel override fields are read as dotted keys such as `otel.kind`.
+The current Crystal facade is ergonomic for identifier-style named fields; if you
+need dotted override keys today, inject them through lower-level field/value
+construction rather than plain named args.
+
+## Concurrency Helpers
+
+Concurrency helpers are split across `src/tracing/concurrency*`.
+
+```crystal
+require "tracing/concurrency"
+require "tracing/concurrency/channel_ext"
+
+done = Tracing::Concurrency.spawn(name: "worker", job: "reindex") do
+  info!("worker.started")
+  42
 end
 
-tracer = OpenTelemetry.tracer_provider.tracer("my_app")
+result = done.receive
 
-Registry.default
-  .with(OpenTelemetryLayer.new(tracer)
-    .with_level(Level::INFO))
-  .init
+channel = Channel(String).new
+traced = channel.traced("jobs")
 ```
 
-OTel fields on spans:
-- `otel.name` — dynamic span name
-- `otel.kind` — server/client/producer/consumer/internal
-- `otel.status_code` — Ok/Error
-- `otel.status_description` — status detail
+Shipped helpers:
 
-## Crystal Log Bridge
+- `Tracing::Concurrency.spawn`
+- `Tracing::Concurrency.spawn_with_span`
+- `Tracing::Concurrency.with_subscriber`
+- `Fiber.spawn_traced`
+- `Channel#traced`
+- `Tracing::Concurrency::TracedChannel`
 
-Forward Crystal `Log` entries to tracing events via `src/tracing-subscriber/log_tracer.cr`:
-
-```crystal
-Registry.default.with(FmtLayer.new(STDOUT)).init
-Log.setup(:trace, LogTracer.new)
-Log.info { "routed to tracing" }
-```
-
-## Non-Blocking I/O
-
-Offload file writes to a worker fiber via `src/tracing-subscriber/appender.cr`:
-
-```crystal
-appender = RollingFileAppender.new(Rotation::DAILY, "logs", "app")
-nb, guard = NonBlocking.new(appender)
-FmtLayer.make_writer { nb.make_writer }
-```
-
-## Flamegraphs
-
-Generate flamegraph data from span timings via `src/tracing-subscriber/flame.cr`:
-
-```crystal
-flame, guard = FlameLayer.with_file("trace.folded")
-Registry.default.with(flame).init
-# ... run app ...
-# cat trace.folded | inferno-flamegraph > flame.svg
-```
-
-## Instrumentation
-
-Auto-wrap blocks in spans via `src/tracing/facade_dsl.cr`:
+## Instrumentation Helpers
 
 ```crystal
 @[Tracing::Instrument]
 def process(id : Int32)
   Tracing.instrument("process", id: id) do
-    # work happens inside span "process"
+    info!("process.started")
   end
 end
 ```
@@ -331,8 +319,10 @@ end
 shards install
 crystal tool format --check src spec
 ameba src spec
-crystal spec            # 141 parity specs
+crystal spec
 ```
+
+The current suite contains `283` examples in `spec/tracing_spec.cr`.
 
 ## License
 

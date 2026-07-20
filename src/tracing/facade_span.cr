@@ -119,10 +119,20 @@ module Tracing
       @meta
     end
 
+    def close : Bool
+      return false unless inner = @inner
+      @inner = nil
+      inner.subscriber.try_close(inner.id)
+    end
+
     def exit_span : Nil
       if inner = @inner
         inner.subscriber.exit(inner.id)
       end
+    end
+
+    def finalize
+      close
     end
   end
 

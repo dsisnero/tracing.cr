@@ -1,19 +1,19 @@
 # source_id	kind	status	crystal_refs	notes
-layer.rs::func::new	func	missing	-	auto-generated
-layer.rs::func::with_context_activation	func	missing	-	auto-generated
-layer.rs::func::with_error_events_to_exceptions	func	missing	-	auto-generated
-layer.rs::func::with_error_events_to_status	func	missing	-	auto-generated
-layer.rs::func::with_error_fields_to_exceptions	func	missing	-	auto-generated
-layer.rs::func::with_error_records_to_exceptions	func	missing	-	auto-generated
-layer.rs::func::with_level	func	missing	-	auto-generated
-layer.rs::func::with_location	func	missing	-	auto-generated
-layer.rs::func::with_target	func	missing	-	auto-generated
-layer.rs::func::with_threads	func	missing	-	auto-generated
-layer.rs::func::with_tracked_inactivity	func	missing	-	auto-generated
-layer.rs::method::OpenTelemetryLayer.new	method	missing	-	auto-generated
-layer.rs::struct::OpenTelemetryLayer	struct	missing	-	auto-generated
+layer.rs::func::new	func	ported	src/tracing/opentelemetry/layer.cr	accepts TraceProvider or Trace; uses provider config for new root traces
+layer.rs::func::with_context_activation	func	ported	src/tracing/opentelemetry/layer.cr	activates current fiber trace/span on enter/exit
+layer.rs::func::with_error_events_to_exceptions	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_error_events_to_status	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_error_fields_to_exceptions	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_error_records_to_exceptions	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_level	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_location	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_target	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_threads	func	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::func::with_tracked_inactivity	func	ported	src/tracing/opentelemetry/layer.cr	flag kept for API parity; timings are exported on close
+layer.rs::method::OpenTelemetryLayer.new	method	ported	src/tracing/opentelemetry/layer.cr	-
+layer.rs::struct::OpenTelemetryLayer	struct	ported	src/tracing/opentelemetry/layer.cr	-
 layer.rs::test::context_activation_disabled	test	missing	-	auto-generated
-layer.rs::test::dynamic_span_names	test	missing	-	auto-generated
+layer.rs::test::dynamic_span_names	test	ported	spec/tracing_spec.cr	OpenTelemetry dynamic span name + export integration coverage
 layer.rs::test::event_filter_count	test	missing	-	auto-generated
 layer.rs::test::excludes_level_no_context_activation	test	missing	-	auto-generated
 layer.rs::test::excludes_level_with_context_activation	test	missing	-	auto-generated
@@ -22,10 +22,10 @@ layer.rs::test::excludes_span_location_with_context_activation	test	missing	-	au
 layer.rs::test::excludes_target	test	missing	-	auto-generated
 layer.rs::test::excludes_thread_no_context_activation	test	missing	-	auto-generated
 layer.rs::test::excludes_thread_with_context_activation	test	missing	-	auto-generated
-layer.rs::test::follows_from_adds_link_no_context_activation	test	missing	-	auto-generated
-layer.rs::test::follows_from_adds_link_with_context_activation	test	missing	-	auto-generated
-layer.rs::test::follows_from_multiple_links_no_context_activation	test	missing	-	auto-generated
-layer.rs::test::follows_from_multiple_links_with_context_activation	test	missing	-	auto-generated
+layer.rs::test::follows_from_adds_link_no_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from
+layer.rs::test::follows_from_adds_link_with_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from
+layer.rs::test::follows_from_multiple_links_no_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from
+layer.rs::test::follows_from_multiple_links_with_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from
 layer.rs::test::includes_level_no_context_activation	test	missing	-	auto-generated
 layer.rs::test::includes_level_with_context_activation	test	missing	-	auto-generated
 layer.rs::test::includes_span_location_no_context_activation	test	missing	-	auto-generated
@@ -35,9 +35,9 @@ layer.rs::test::includes_thread_no_context_activation	test	missing	-	auto-genera
 layer.rs::test::includes_thread_with_context_activation	test	missing	-	auto-generated
 layer.rs::test::includes_timings_no_context_activation	test	missing	-	auto-generated
 layer.rs::test::includes_timings_with_context_activation	test	missing	-	auto-generated
-layer.rs::test::otel_context_propagation	test	missing	-	auto-generated
-layer.rs::test::parent_context	test	missing	-	auto-generated
-layer.rs::test::parent_context_2	test	missing	-	auto-generated
+layer.rs::test::otel_context_propagation	test	ported	spec/tracing_spec.cr	context activation keeps current fiber trace/span aligned during nested tracing spans
+layer.rs::test::parent_context	test	ported	spec/tracing_spec.cr	root/child export integration verifies parent span ids
+layer.rs::test::parent_context_2	test	ported	spec/tracing_spec.cr	root/child export integration verifies parent span ids
 layer.rs::test::propagates_error_fields_from_event_to_span_no_context_activation	test	missing	-	auto-generated
 layer.rs::test::propagates_error_fields_from_event_to_span_with_context_activation	test	missing	-	auto-generated
 layer.rs::test::propagates_no_error_fields_from_event_to_span_no_context_activation	test	missing	-	auto-generated

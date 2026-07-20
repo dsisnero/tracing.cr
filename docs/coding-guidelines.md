@@ -2,72 +2,81 @@
 
 ## Porting Rules
 
-1. **Upstream behavior is the source of truth.** Port behavior, not Rust style.
-   Crystal idioms are fine where semantics stay unchanged.
-
-2. **Explicit numeric widths.** Use `UInt64`, `Int32`, `UInt8` when signedness or
-   range matters. Example: `Level : UInt64` enum for optimized integer comparisons
-   (`src/tracing/types.cr:10`).
-
-3. **Red-green TDD.** Write a failing parity spec first, then the minimal code
-   to pass. See `spec/tracing_spec.cr` for 111 ported parity examples.
-
-4. **Document renames.** When upstream method names differ from Crystal conventions,
-   record the mapping in `plans/inventory/tracing-core.md` under "Naming Convention Map".
-   Example: `is_event()` → `event?`.
-
-5. **Commit per feature.** Each feature in `plans/parity.md` maps to one commit
-   with `port:` prefix.
+1. Upstream behavior is the source of truth. Port semantics, not Rust syntax.
+2. Prefer Crystal names only when the behavior stays aligned with upstream.
+3. Keep numeric widths explicit when range or signedness matters.
+4. Add or update parity coverage before or alongside behavior changes.
+5. Update `README.md`, `docs/*`, and `plans/parity.md` when the public surface changes.
 
 ## Naming Conventions
 
-Crystal idioms vs upstream Rust:
+Crystal conventions used in this repo:
 
-| Rust | Crystal | Convention |
-|------|---------|------------|
-| `is_event()` | `event?` | predicate drops `is_` |
-| `is_span()` | `span?` | same |
-| `is_empty()` | `empty?` | same |
-| `set_interest(x)` | `interest = x` | setter uses `=` |
-| `set_max(x)` | `max = x` | same |
-| `get_default()` | `default` | getter drops `get_` |
+| Upstream Style | Crystal Style | Example |
+|----------------|---------------|---------|
+| `is_event()` | `event?` | predicate rename |
+| `is_span()` | `span?` | predicate rename |
+| `get_default()` | `default` | getter rename |
+| `set_interest(x)` | `interest = x` | setter rename |
+| `set_max(x)` | `max = x` | setter rename |
 
-## Crystal Patterns
+Document notable renames in `plans/inventory/` when they affect parity review.
 
-### Enums
+## Type System Guidance
 
-Use `@[Flags]` for bitmask enums (see `FmtSpan` in `src/tracing-subscriber/fmt.cr:5`).
-Use bare `enum` for mutually exclusive values (see `Level` in `src/tracing/types.cr:10`).
+### Modules vs Abstract Classes
 
-### Abstract Classes vs Modules
-
-Use `abstract class` when shared state is needed (`Layer` base class in
-`src/tracing-subscriber/layer.cr:5`). Use `module` for pure trait interfaces
-(`Subscriber` module in `src/tracing/subscriber.cr`, `LookupSpan` in
-`src/tracing-subscriber/lookup_span.cr`).
+- Use `module` for trait-style behavior with no stored state.
+  Example: `Tracing::Core::Subscriber` in
+  [src/tracing/core/subscriber.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/core/subscriber.cr:1).
+- Use `abstract class` when subclasses share hooks or stateful behavior.
+  Example: `Tracing::Layer` in
+  [src/tracing/subscriber/layer.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/layer.cr:1).
 
 ### Generics
 
-Use generic classes for type-safe composition. Example:
-`class Layered(S)` in `src/tracing-subscriber/layer.cr:69` — the type parameter
-`S` represents the inner subscriber type.
+Use generics only where they preserve a meaningful type relationship.
+The main example is `Layered(S)` in
+[src/tracing/subscriber/layer.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/subscriber/layer.cr:104),
+which keeps the inner subscriber type intact across layer composition.
 
-### Atomic Operations
+Avoid adding generic parameters just to mirror Rust types when runtime
+polymorphism or aliases are clearer in Crystal.
 
-Use `Atomic(UInt64)` for lock-free counters and `Atomic(UInt8)` for state flags.
-CAS (`compare_and_set`) for lock-free linked list registration
-(`src/tracing/callsite.cr:49`).
+### Enums and Flags
 
-### Pointer Casting for Type-Erasure
+- Use `@[Flags]` for bitmask-style configuration enums such as `FmtSpan`.
+- Use plain `enum` for mutually exclusive modes such as `Rotation`.
 
-When storing heterogeneous types, use `Pointer(Void)` with `malloc` and cast.
-See `Extensions` in `src/tracing-subscriber/extensions.cr` for type-erased storage.
+### Type-Erased Storage
 
-## Ameba
+Per-span extensions use type-erased storage. Keep those APIs stable and avoid
+broad refactors without strong test coverage, because many layer features rely
+on them indirectly.
 
-Targeted per-method suppressions only. Format:
-```crystal
-# Port parity: matches upstream <function_name>()
-# ameba:disable Naming/AccessorMethodName
-def self.set_global_default(subscriber)
-```
+## Testing Expectations
+
+- The main suite lives in `spec/tracing_spec.cr`.
+- The current suite contains `283` examples.
+- New behavior should come with a focused spec whenever practical.
+- For parity work, port the behavior of the upstream test rather than copying Rust structure literally.
+
+## Comments and Divergences
+
+- Keep comments short and behavioral.
+- When Crystal diverges from upstream due to runtime or language constraints,
+  document the divergence near the code and, if it affects users, in the docs.
+- Use targeted `ameba:disable` comments only when there is a clear reason tied
+  to parity or API surface.
+
+## Public API Changes
+
+If you change exported behavior under `src/tracing.cr` or add/remove methods
+from `Tracing.fmt`, `FmtLayer`, `Registry`, `Layer`, `OpenTelemetryLayer`,
+`NonBlocking`, or `FlameLayer`, update:
+
+- `README.md`
+- `docs/architecture.md`
+- `docs/development.md` if the source layout changed
+- `docs/testing.md` if the verification story changed
+- `CHANGELOG.md`

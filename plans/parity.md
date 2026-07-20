@@ -163,17 +163,20 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Fiber extension — Fiber.spawn_traced
 - [x] Channel extension — Channel#traced
 
-### tracing-opentelemetry ✓ (in progress)
+### tracing-opentelemetry ✓
 
 - [x] OpenTelemetryLayer
+- [x] Tracer/provider integration + export on span close
+- [x] Context activation via current fiber trace/span
 - [x] Span kind mapping (otel.kind → SpanKind)
 - [x] Span status mapping (otel.status_code → StatusCode)
 - [x] Dynamic span name (otel.name)
-- [x] Error event → exception detection
-- [x] with_level, with_target, with_location, with_threads
+- [x] Error event → status + exception mapping
+- [x] with_level, with_target, with_location, with_threads, with_context_activation
+- [x] Root/child span export + contextual event routing
 
-(Remaining OTel items — Tracer integration, Context propagation, Metrics — are
-tracked under [Remaining for Parity](#remaining-for-parity).)
+(Remaining OTel items — metrics and native span-link export — are tracked under
+[Remaining for Parity](#remaining-for-parity).)
 
 ## Remaining for Parity
 
@@ -224,11 +227,10 @@ so **verify each against `src/` before starting**.
 - [ ] tracing-journald: systemd journal sink (Linux-only — decide **skip**)
 - [ ] tracing-tower: tower middleware (Rust-ecosystem-specific — decide **skip**)
 
-### tracing-opentelemetry (blocked / deferred)
+### tracing-opentelemetry
 
-- [ ] Tracer integration (blocked — needs dynamic dispatch)
-- [ ] Context propagation (blocked — needs OTel Context API)
 - [ ] Metrics (deferred)
+- [ ] Native OTel span links for `follows_from` (deferred — current SDK lacks link storage/export)
 
 ### Housekeeping
 
@@ -287,6 +289,16 @@ the relevant source files; omitted symbols are marked `skipped` in
 
 - `chrono` / `time` crate formatters are not ported (no Crystal equivalent);
   `SystemTime` / `Uptime` / a musl-based `DateTime` cover the built-in timers.
+
+### tracing-opentelemetry
+
+- `Span#close` explicitly releases a tracing span handle and drives export when
+  it is the last handle. `Span#finalize` calls `#close` as a fallback, but
+  explicit `#close` is the deterministic path because Crystal does not have
+  Rust's deterministic `Drop`.
+- `follows_from` relationships are preserved as a `tracing.follows_from`
+  attribute array for now. The installed `opentelemetry-sdk.cr` does not expose
+  native span link storage/export yet, so upstream link semantics are deferred.
 
 ## Quality Gates
 

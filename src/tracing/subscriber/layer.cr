@@ -19,6 +19,10 @@ module Tracing
     def on_exit(id : Core::Span::Id, ctx : LayerContext) : Nil
     end
 
+    # Called immediately before a span is closed and removed from the registry.
+    def on_close(id : Core::Span::Id, ctx : LayerContext) : Nil
+    end
+
     # Called when fields are recorded on a span.
     def on_record(id : Core::Span::Id, values : Core::Span::Record, ctx : LayerContext) : Nil
     end
@@ -70,6 +74,10 @@ module Tracing
 
     def on_exit(id : Core::Span::Id, ctx : LayerContext) : Nil
       @inner.on_exit(id, ctx)
+    end
+
+    def on_close(id : Core::Span::Id, ctx : LayerContext) : Nil
+      @inner.on_close(id, ctx)
     end
 
     def on_record(id : Core::Span::Id, values : Core::Span::Record, ctx : LayerContext) : Nil
@@ -168,6 +176,15 @@ module Tracing
       end
     end
 
+    def try_close(id : Core::Span::Id) : Bool
+      ctx = LayerContext.new(@inner)
+      closing = closing_span?(id)
+      if closing && @layer.enabled?(Metadata.new("", "", Level::TRACE), ctx)
+        @layer.on_close(id, ctx)
+      end
+      @inner.try_close(id)
+    end
+
     def enabled(metadata : Metadata) : Bool
       ctx = LayerContext.new(@inner)
       @layer.enabled?(metadata, ctx)
@@ -179,6 +196,12 @@ module Tracing
 
     def max_level_hint : LevelFilter?
       @layer.max_level_hint
+    end
+
+    private def closing_span?(id : Core::Span::Id) : Bool
+      lookup = @inner.as?(LookupSpan)
+      return false unless lookup
+      lookup.span_data(id).try(&.ref_count) == 1
     end
   end
 

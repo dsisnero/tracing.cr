@@ -1678,6 +1678,25 @@ private class TestSpan
   end
 end
 
+private def build_valueset(fields : Hash(String, _)) : Tracing::Core::Field::ValueSet
+  field_set = Tracing::Field::FieldSet.of(fields.keys, Tracing::Callsite::Identifier.new)
+  values = Tracing::Core::Field::ValueSet.new(field_set)
+  fields.each do |key, value|
+    values.record(Tracing::Field::Field.new(key), value)
+  end
+  values
+end
+
+private def wait_for_export(io : IO::Memory) : JSON::Any
+  50.times do
+    output = io.to_s
+    return JSON.parse(output) unless output.empty?
+    Fiber.yield
+    sleep 1.millisecond
+  end
+  raise "timed out waiting for OpenTelemetry export"
+end
+
 # RED tests — OTel layer builder configuration
 describe "OpenTelemetryLayer configuration" do
   it "with_level filters events below the configured level" do
@@ -1748,6 +1767,76 @@ describe "OpenTelemetry dynamic span name" do
     layer = Tracing::OpenTelemetryLayer.new
     name = layer.resolve_span_name("default_name", nil)
     name.should eq("default_name")
+  end
+end
+
+describe "OpenTelemetry export integration" do
+  it "exports root and child spans with contextual events" do
+    io = IO::Memory.new
+    exporter = OpenTelemetry::Exporter.new(:io, io: io)
+    provider = OpenTelemetry::TraceProvider.new(
+      service_name: "spec",
+      service_version: "1.0.0",
+      exporter: exporter
+    )
+    layer = Tracing::OpenTelemetryLayer.new(provider).with_context_activation(true)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      root_meta = Metadata.new("request", "http.server", Level::INFO, kind: Kind::SPAN)
+      root_values = build_valueset({
+        "otel.name"   => "GET /users",
+        "otel.kind"   => "server",
+        "http.method" => "GET",
+      })
+      root = Tracing::Span.new(root_meta, root_values)
+
+      root.in_scope do
+        info!("request.started", user: "alice")
+
+        child = Tracing.child_span(root.id.not_nil!, Level::INFO, "db", sql: "select 1")
+        child.in_scope do
+          info!("db.query", rows: 1)
+        end
+        child.close
+      end
+
+      root.close
+    end
+
+    trace = wait_for_export(io)
+    spans = trace["spans"].as_a
+    root = spans.find! { |span| span["name"].as_s == "GET /users" }
+    child = spans.find! { |span| span["name"].as_s == "db" }
+
+    root["attributes"]["http.method"].as_s.should eq("GET")
+    root["events"].as_a.map(&.["name"].as_s).should contain("request.started")
+    child["parentSpanId"].as_s.should eq(root["spanId"].as_s)
+    child["events"].as_a.map(&.["name"].as_s).should contain("db.query")
+  end
+
+  it "maps error events to status and exception events" do
+    io = IO::Memory.new
+    exporter = OpenTelemetry::Exporter.new(:io, io: io)
+    provider = OpenTelemetry::TraceProvider.new(service_name: "spec", exporter: exporter)
+    layer = Tracing::OpenTelemetryLayer.new(provider).with_context_activation(true)
+    subscriber = Tracing::Registry.new.with(layer)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      span = span!(Level::INFO, "error_span")
+      span.in_scope do
+        error!("request.failed", error: "test error")
+      end
+      span.close
+    end
+
+    trace = wait_for_export(io)
+    span = trace["spans"].as_a.find! { |entry| entry["name"].as_s == "error_span" }
+    span["status"]["code"].as_i.should eq(2)
+    span["status"]["message"].as_s.should eq("test error")
+
+    exception_event = span["events"].as_a.find! { |event| event["name"].as_s == "exception" }
+    exception_event["attributes"]["exception.message"].as_s.should eq("test error")
   end
 end
 

@@ -84,6 +84,18 @@ module Tracing
     end
   end
 
+  class Layered(S)
+    include LookupSpan
+
+    def span_data(id : Core::Span::Id) : Registry::SpanData?
+      @inner.as?(LookupSpan).try(&.span_data(id))
+    end
+
+    def span(id : Core::Span::Id) : SpanRef?
+      @inner.as?(LookupSpan).try(&.span(id))
+    end
+  end
+
   # Adds event_span method to look up the parent span of an event.
   class LayerContext
     def event_span(event : Core::Event) : SpanRef?

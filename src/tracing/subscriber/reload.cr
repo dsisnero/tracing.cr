@@ -50,6 +50,10 @@ module Tracing
       current.on_exit(id, ctx)
     end
 
+    def on_close(id : Core::Span::Id, ctx : LayerContext) : Nil
+      current.on_close(id, ctx)
+    end
+
     def on_record(id : Core::Span::Id, values : Core::Span::Record, ctx : LayerContext) : Nil
       current.on_record(id, values, ctx)
     end

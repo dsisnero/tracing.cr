@@ -67,6 +67,11 @@ module Tracing
       @a.on_exit(id, ctx)
       @b.on_exit(id, ctx)
     end
+
+    def on_close(id : Core::Span::Id, ctx : LayerContext) : Nil
+      @a.on_close(id, ctx)
+      @b.on_close(id, ctx)
+    end
   end
 
   # Enabled iff either wrapped filter is enabled.
@@ -113,6 +118,11 @@ module Tracing
       @a.on_exit(id, ctx)
       @b.on_exit(id, ctx)
     end
+
+    def on_close(id : Core::Span::Id, ctx : LayerContext) : Nil
+      @a.on_close(id, ctx)
+      @b.on_close(id, ctx)
+    end
   end
 
   # Inverts the wrapped filter's `enabled?` and callsite `Interest`.
@@ -150,6 +160,10 @@ module Tracing
 
     def on_exit(id : Core::Span::Id, ctx : LayerContext) : Nil
       @a.on_exit(id, ctx)
+    end
+
+    def on_close(id : Core::Span::Id, ctx : LayerContext) : Nil
+      @a.on_close(id, ctx)
     end
   end
 end
