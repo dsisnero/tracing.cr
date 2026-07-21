@@ -47,7 +47,7 @@ module Tracing
       @inner.insert(value)
     end
 
-    def replace(value) : T? forall T
+    def replace(value : T) : T? forall T
       @inner.replace(value)
     end
 
