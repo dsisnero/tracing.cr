@@ -26,6 +26,11 @@ module Tracing
       Scope.new(@registry, @span_id)
     end
 
+    # Returns this span's ID.
+    def id : Core::Span::Id
+      @span_id
+    end
+
     # Get immutable access to span extensions.
     def extensions : Extensions?
       @registry.span_data(@span_id).try(&.extensions)
