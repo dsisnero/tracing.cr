@@ -1,77 +1,122 @@
 module Tracing
-  # A non-blocking writer that spawns a worker fiber for I/O.
-  #
-  # Messages are sent via Channel to the worker fiber which writes
-  # them to the underlying IO. This prevents blocking the calling
-  # fiber on slow I/O.
-  #
-  # Ported from upstream `tracing_appender::non_blocking`.
-  class NonBlocking
-    DEFAULT_BUFFER_SIZE = 128_000
+  DEFAULT_BUFFERED_LINES_LIMIT = 128_000
 
-    @sender : Channel(Bytes)
+  class ErrorCounter
+    @counter : Atomic(UInt64)
 
-    # Create a new NonBlocking writer wrapping the given IO.
-    def self.new(io : IO, buffer_size : Int32 = DEFAULT_BUFFER_SIZE) : {NonBlocking, WorkerGuard}
-      builder(io, buffer_size: buffer_size)
+    def initialize
+      @counter = Atomic(UInt64).new(0)
     end
 
-    # Builder-style constructor.
-    #
-    # Options:
-    #   buffer_size: channel buffer capacity (default: 128_000)
-    #   lossy: drop messages when buffer is full (default: false, backpressure)
-    #
-    # NOTE: lossy mode is a placeholder — Crystal's Channel supports
-    # only blocking send. In non-lossy mode (default), send blocks until
-    # the worker drains the buffer. Lossy will be implemented when
-    # Crystal adds non-blocking Channel send.
-    def self.builder(io : IO, *, buffer_size : Int32 = DEFAULT_BUFFER_SIZE, lossy : Bool = false) : {NonBlocking, WorkerGuard}
-      channel = Channel(Bytes).new(buffer_size)
+    def dropped_lines : UInt64
+      @counter.get
+    end
+
+    def incr_saturating
+      loop do
+        curr = @counter.get
+        return if curr == UInt64::MAX
+        _, succeeded = @counter.compare_and_set(curr, curr + 1)
+        return if succeeded
+      end
+    end
+  end
+
+  class NonBlockingBuilder
+    @buffered_lines_limit : Int32
+    @is_lossy : Bool
+    @thread_name : String
+
+    def initialize
+      @buffered_lines_limit = DEFAULT_BUFFERED_LINES_LIMIT
+      @is_lossy = true
+      @thread_name = "tracing-appender"
+    end
+
+    def buffered_lines_limit(n : Int32) : self
+      @buffered_lines_limit = n
+      self
+    end
+
+    def lossy(yes : Bool) : self
+      @is_lossy = yes
+      self
+    end
+
+    def thread_name(name : String) : self
+      @thread_name = name
+      self
+    end
+
+    def finish(io : IO) : {NonBlocking, WorkerGuard}
+      NonBlocking.create(io, @buffered_lines_limit, @is_lossy, @thread_name)
+    end
+  end
+
+  class NonBlocking
+    @sender : Channel(Bytes)
+    @is_lossy : Bool
+    @error_counter : ErrorCounter
+
+    def self.new(io : IO, buffer_size : Int32 = DEFAULT_BUFFERED_LINES_LIMIT) : {NonBlocking, WorkerGuard}
+      NonBlockingBuilder.new.buffered_lines_limit(buffer_size).finish(io)
+    end
+
+    def self.builder(io : IO, *, buffer_size : Int32 = DEFAULT_BUFFERED_LINES_LIMIT, lossy : Bool = true) : {NonBlocking, WorkerGuard}
+      NonBlockingBuilder.new.buffered_lines_limit(buffer_size).lossy(lossy).finish(io)
+    end
+
+    def self.create(io : IO, buffered_lines_limit : Int32, is_lossy : Bool, thread_name : String) : {NonBlocking, WorkerGuard}
+      channel = Channel(Bytes).new(buffered_lines_limit)
       done = Channel(Bool).new
 
-      spawn(name: "tracing-appender-worker") do
+      spawn(name: thread_name) do
         loop do
           msg = begin
             channel.receive
           rescue Channel::ClosedError
             break
           end
-          begin
-            io.write(msg)
-            io.flush
-          rescue ex
-            break
-          end
+          io.write(msg)
+          io.flush
         end
         done.send(true)
       end
 
       Fiber.yield
 
-      nb = new(channel)
+      error_counter = ErrorCounter.new
+      nb = new(channel, is_lossy, error_counter)
       guard = WorkerGuard.new(channel, done)
       {nb, guard}
     end
 
-    private def initialize(@sender : Channel(Bytes))
+    private def initialize(@sender : Channel(Bytes), @is_lossy : Bool, @error_counter : ErrorCounter)
     end
 
-    # Returns a MakeWriter-compatible IO that sends to the worker.
     def make_writer : NonBlockingWriter
-      NonBlockingWriter.new(@sender)
+      NonBlockingWriter.new(@sender, @is_lossy, @error_counter)
+    end
+
+    def error_counter : ErrorCounter
+      @error_counter
     end
   end
 
-  # An IO-like writer that sends bytes to the NonBlocking worker fiber.
   class NonBlockingWriter < IO
-    @sender : Channel(Bytes)
-
-    def initialize(@sender : Channel(Bytes))
+    def initialize(@sender : Channel(Bytes), @is_lossy : Bool, @error_counter : ErrorCounter)
     end
 
     def write(slice : Bytes) : Nil
-      @sender.send(slice.dup)
+      if @is_lossy
+        select
+        when @sender.send(slice.dup)
+        else
+          @error_counter.incr_saturating
+        end
+      else
+        @sender.send(slice.dup)
+      end
     end
 
     def read(slice : Bytes) : NoReturn
@@ -79,9 +124,6 @@ module Tracing
     end
   end
 
-  # Ensures the worker fiber is shut down and buffered data is flushed.
-  #
-  # Must be held in a variable (not `_`) to prevent immediate drop.
   class WorkerGuard
     @sender : Channel(Bytes)
     @done : Channel(Bool)
@@ -90,12 +132,6 @@ module Tracing
     def initialize(@sender : Channel(Bytes), @done : Channel(Bool))
     end
 
-    # Flush buffered data and shut down the worker fiber.
-    #
-    # Idempotent: only the first call closes the sender and waits for
-    # the worker to drain. Subsequent calls (including the one issued
-    # by `finalize` during GC) are no-ops, so they cannot deadlock on
-    # `@done.receive` after the worker fiber has already terminated.
     def close : Nil
       _, succeeded = @closed.compare_and_set(false, true)
       return unless succeeded
@@ -108,7 +144,6 @@ module Tracing
     end
   end
 
-  # Rotation schedule for rolling log files.
   enum Rotation
     MINUTELY
     HOURLY
@@ -116,7 +151,6 @@ module Tracing
     NEVER
   end
 
-  # A file appender that rotates log files on a fixed schedule.
   class RollingFileAppender
     @rotation : Rotation
     @directory : String
@@ -131,16 +165,10 @@ module Tracing
       rotate
     end
 
-    # Returns a new `Builder` for configuring a `RollingFileAppender`.
     def self.builder : Builder
       Builder.new
     end
 
-    # Configures and constructs a `RollingFileAppender`.
-    #
-    # Ported from upstream `tracing_appender::rolling::Builder`. Defaults:
-    # rotation `NEVER`, no prefix/suffix, no file limit. An empty prefix or
-    # suffix is treated as unset.
     class Builder
       @rotation : Rotation
       @prefix : String?
@@ -200,8 +228,6 @@ module Tracing
       end
     end
 
-    # Builds the log filename for `date`, mirroring upstream `join_date`:
-    # prefix/suffix and (for rotating schedules) the date are joined with `.`.
     private def build_filename(date : String) : String
       prefix = @prefix
       suffix = @suffix
@@ -226,12 +252,6 @@ module Tracing
       end
     end
 
-    # Deletes the oldest matching log files so that at most `max_files - 1`
-    # remain before the next file is created. Mirrors upstream `prune_old_logs`.
-    #
-    # Divergence: upstream orders by file creation time (falling back to the
-    # date parsed from the filename); Crystal's `File::Info` exposes
-    # modification time, so files are ordered by modification time instead.
     private def prune_old_logs : Nil
       max = @max_files
       return unless max

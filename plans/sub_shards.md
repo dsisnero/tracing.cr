@@ -11,6 +11,12 @@ feasibility, effort, and priority ranking.
 | tracing | 0.1.44 | Complete |
 | tracing-subscriber | 0.3.23 | Complete |
 
+## Vendored External Crate
+
+| Crate | Version | Source | Notes |
+|-------|---------|--------|-------|
+| tracing-chrome | 0.7.2 | `vendor/tracing-chrome/` | Separate ecosystem crate for Chrome / Perfetto trace-event JSON output. Vendored as a standalone submodule, not part of `tokio-rs/tracing`. |
+
 ## Ranking
 
 ### Tier 1 — High Priority

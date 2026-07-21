@@ -7,3 +7,6 @@
 [submodule "vendor/perf-tools"]
 	path = vendor/perf-tools
 	url = https://github.com/crystal-lang/perf-tools.git
+[submodule "vendor/tracing-chrome"]
+	path = vendor/tracing-chrome
+	url = https://github.com/thoren-d/tracing-chrome.git
