@@ -2,6 +2,10 @@
 
 Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 
+See also:
+- [Sub-shard Porting Plan](./sub_shards.md)
+- [tracing-chrome Parity Plan](./tracing_chrome.md)
+
 ## Summary
 
 | Crate | Version | Status | Specs |
@@ -19,8 +23,9 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 | tracing-serde | 0.1.0 | ✓ | JSON mode |
 | tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
+| tracing-chrome | 0.7.2 | ✓ | ChromeLayer + FlushGuard |
 
-**Total: 281 specs across 13 sub-crates.**
+**Total: 281 specs across 14 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -163,6 +168,19 @@ Upstream: **tokio-rs/tracing** pinned at `tracing-0.1.44` (commit `2d55f6f`)
 - [x] Fiber extension — Fiber.spawn_traced
 - [x] Channel extension — Channel#traced
 
+### tracing-chrome ✓
+
+- [x] `TraceStyle` enum (Threaded, Async)
+- [x] `EventOrSpan` — wraps Event or SpanRef for callbacks
+- [x] `ChromeLayerBuilder` — builder API (file, writer, include_args, include_locations, trace_style, name_fn, category_fn, build)
+- [x] `ChromeLayer < Layer` — Layer trait impl (on_enter, on_exit, on_event, on_new_span, on_close, on_record)
+- [x] `FlushGuard` — flush, start_new, finalize (Drop → Close)
+- [x] Channel-based background writer fiber (JSON trace format)
+- [x] `JsonVisitor` — Field::Visit → JSON args
+- [x] `ArgsWrapper` — span extension storage
+- [x] Thread id assignment (fiber → TID mapping)
+- [x] Custom name_fn / category_fn callbacks
+
 ### tracing-opentelemetry ✓
 
 - [x] OpenTelemetryLayer
@@ -191,9 +209,9 @@ so **verify each against `src/` before starting**.
 - [x] `FmtFormat::DefaultFields` — default field formatter (key=value pairs); wired into `FmtLayer`
 - [x] `FmtFormat::FmtContext` + `DefaultFormatEvent` — FmtLayer delegates event formatting
 - [x] Field formatters: `DefaultFields`, `DefaultVisitor`, `FormattedFields`
-- [ ] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
+- [x] Field-visitor infra: `MakeVisitor`, `VisitFmt`, `VisitOutput`, `RecordFields`
 - [x] `Json` options: `flatten_event`, `with_current_span`, `with_span_list`
-- [ ] `JsonFields` / `JsonVisitor` — rich span field objects in JSON (names only for now)
+- [x] `JsonFields` / `JsonVisitor` — JSON field formatter with MakeVisitor pattern and type-faithful serialization
 - [x] `FmtLayer#with_thread_ids`, `#with_thread_names`
 - [x] `FmtLayer#without_time`, `#with_test_writer`
 - [x] `TestWriter` — output-capture writer for unit tests
@@ -212,7 +230,7 @@ so **verify each against `src/` before starting**.
 ### tracing-appender
 
 - [x] `RollingFileAppender::Builder` — `max_log_files`, `filename_suffix`, `filename_prefix`
-- [ ] `NonBlocking.lossy` real non-blocking send (currently placeholder — see Divergences)
+- [x] `NonBlocking.lossy` real non-blocking send (`select` with `else` clause for lossy channel send)
 
 ### tracing — instrument / futures
 
@@ -221,7 +239,8 @@ so **verify each against `src/` before starting**.
 ### Sub-crates not started (scope decisions)
 
 - [ ] tracing-error: backtrace formatting + `ExtractSpanTrace` / `InstrumentError` / `InstrumentResult`
-- [ ] tracing-log: `AsLog` / `AsTrace` / `NormalizeEvent` / `interest_cache`, `LogTracer::builder`
+- [x] tracing-log: `LogTracerBuilder` — builder API (`with_max_level`, `ignore_crate`, `ignore_all`, `finish`); class-level `LogTracer.builder`
+- [ ] tracing-log: `AsLog` / `AsTrace` / `NormalizeEvent` / `interest_cache` (deferred)
 - [ ] tracing-futures: `Instrument` / `WithSubscriber` traits
 - [ ] tracing-serde: standalone `AsSerde` / `AsMap` traits (likely **N/A** — Crystal uses `JSON.build`)
 - [ ] tracing-journald: systemd journal sink (Linux-only — decide **skip**)

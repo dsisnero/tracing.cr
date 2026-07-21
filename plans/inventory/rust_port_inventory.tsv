@@ -415,15 +415,15 @@ tracing-log/src/lib.rs::trait::AsLog	trait	missing	-	auto-generated
 tracing-log/src/lib.rs::trait::AsTrace	trait	missing	-	auto-generated
 tracing-log/src/lib.rs::trait::NormalizeEvent	trait	missing	-	auto-generated
 tracing-log/src/lib.rs::trait::Sealed	trait	missing	-	auto-generated
-tracing-log/src/log_tracer.rs::func::builder	func	missing	-	auto-generated
-tracing-log/src/log_tracer.rs::func::ignore_crate	func	missing	-	auto-generated
+tracing-log/src/log_tracer.rs::func::builder	func	ported	-	auto-generated
+tracing-log/src/log_tracer.rs::func::ignore_crate	func	ported	-	auto-generated
 tracing-log/src/log_tracer.rs::func::init	func	missing	-	auto-generated
 tracing-log/src/log_tracer.rs::func::init_with_filter	func	missing	-	auto-generated
-tracing-log/src/log_tracer.rs::func::new	func	missing	-	auto-generated
+tracing-log/src/log_tracer.rs::func::new	func	ported	-	auto-generated
 tracing-log/src/log_tracer.rs::func::with_interest_cache	func	missing	-	auto-generated
 tracing-log/src/log_tracer.rs::func::with_max_level	func	missing	-	auto-generated
-tracing-log/src/log_tracer.rs::method::Builder.new	method	missing	-	auto-generated
-tracing-log/src/log_tracer.rs::method::LogTracer.builder	method	missing	-	auto-generated
+tracing-log/src/log_tracer.rs::method::Builder.new	method	ported	-	auto-generated
+tracing-log/src/log_tracer.rs::method::LogTracer.builder	method	ported	-	auto-generated
 tracing-log/src/log_tracer.rs::struct::Builder	struct	missing	-	auto-generated
 tracing-log/src/log_tracer.rs::struct::LogTracer	struct	missing	-	auto-generated
 tracing-log/tests/log_tracer.rs::test::normalized_metadata	test	missing	-	auto-generated
@@ -842,34 +842,34 @@ tracing-subscriber/src/fmt/mod.rs::test::is_lookup_span	test	missing	-	auto-gene
 tracing-subscriber/src/fmt/mod.rs::test::subscriber_downcasts	test	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::test::subscriber_downcasts_to_parts	test	missing	-	auto-generated
 tracing-subscriber/src/fmt/mod.rs::type::Formatter	type	missing	-	auto-generated
-tracing-subscriber/src/fmt/time/chrono_crate.rs	func	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	func	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	method	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	method	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	struct	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	struct	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	test	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	test	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	test	skipped	-	requires chrono crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/chrono_crate.rs	test	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::func::new	func	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::func::rfc_3339	func	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::method::ChronoLocal.rfc_3339	method	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::method::ChronoUtc.rfc_3339	method	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::struct::ChronoLocal	struct	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::struct::ChronoUtc	struct	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::test::test_chrono_format_time_local_custom	test	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::test::test_chrono_format_time_local_default	test	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::test::test_chrono_format_time_utc_custom	test	skipped	-	requires chrono crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/chrono_crate.rs::test::test_chrono_format_time_utc_default	test	skipped	-	requires chrono crate; Crystal has no equivalent
 tracing-subscriber/src/fmt/time/datetime.rs::test::test_datetime	test	ported	spec/fmt_time_spec.cr	-
 tracing-subscriber/src/fmt/time/mod.rs::func::time	func	ported	src/tracing/subscriber/fmt/time.cr	-
 tracing-subscriber/src/fmt/time/mod.rs::func::uptime	func	ported	src/tracing/subscriber/fmt/time.cr	-
 tracing-subscriber/src/fmt/time/mod.rs::struct::SystemTime	struct	ported	src/tracing/subscriber/fmt/time.cr	-
 tracing-subscriber/src/fmt/time/mod.rs::struct::Uptime	struct	ported	src/tracing/subscriber/fmt/time.cr	-
 tracing-subscriber/src/fmt/time/mod.rs::trait::FormatTime	trait	ported	src/tracing/subscriber/fmt/time.cr	-
-tracing-subscriber/src/fmt/time/time_crate.rs	func	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	func	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	func	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	method	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	method	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	method	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	method	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	method	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	method	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	struct	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	struct	skipped	-	requires time crate; Crystal has no equivalent
-tracing-subscriber/src/fmt/time/time_crate.rs	struct	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::func::local_rfc_3339	func	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::func::new	func	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::func::rfc_3339	func	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::method::LocalTime.new	method	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::method::LocalTime.rfc_3339	method	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::method::OffsetTime.local_rfc_3339	method	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::method::OffsetTime.new	method	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::method::UtcTime.new	method	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::method::UtcTime.rfc_3339	method	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::struct::LocalTime	struct	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::struct::OffsetTime	struct	skipped	-	requires time crate; Crystal has no equivalent
+tracing-subscriber/src/fmt/time/time_crate.rs::struct::UtcTime	struct	skipped	-	requires time crate; Crystal has no equivalent
 tracing-subscriber/src/fmt/writer.rs::enum::EitherWriter	enum	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::func::new	func	missing	-	auto-generated
 tracing-subscriber/src/fmt/writer.rs::func::none	func	missing	-	auto-generated

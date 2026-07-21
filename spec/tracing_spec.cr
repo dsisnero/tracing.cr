@@ -2783,6 +2783,75 @@ describe "FmtFormat DefaultFields" do
   end
 end
 
+describe "FmtFormat JsonFields" do
+  it "formats fields as JSON object" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    formatter = Tracing::FmtFormat::JsonFields.new
+
+    fs = Tracing::Field::FieldSet.of(["user", "count", "active"], Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+    vs.record(Tracing::Field::Field.new("user"), "alice")
+    vs.record(Tracing::Field::Field.new("count"), 42_i64)
+    vs.record(Tracing::Field::Field.new("active"), true)
+
+    formatter.format_fields(writer, vs)
+    parsed = JSON.parse(io.to_s)
+    parsed["user"].should eq("alice")
+    parsed["count"].should eq(42_i64)
+    parsed["active"].should be_true
+  end
+
+  it "preserves type fidelity in JSON output" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    formatter = Tracing::FmtFormat::JsonFields.new
+
+    fs = Tracing::Field::FieldSet.of(["int_val", "float_val", "bool_val", "str_val"], Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+    vs.record(Tracing::Field::Field.new("int_val"), 1_i64)
+    vs.record(Tracing::Field::Field.new("float_val"), 3.14_f64)
+    vs.record(Tracing::Field::Field.new("bool_val"), false)
+    vs.record(Tracing::Field::Field.new("str_val"), "hello")
+
+    formatter.format_fields(writer, vs)
+    parsed = JSON.parse(io.to_s)
+    parsed["int_val"].should eq(1_i64)
+    parsed["float_val"].should eq(3.14_f64)
+    parsed["bool_val"].should be_false
+    parsed["str_val"].should eq("hello")
+  end
+
+  it "outputs empty object for no fields" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    formatter = Tracing::FmtFormat::JsonFields.new
+
+    fs = Tracing::Field::FieldSet.of([] of String, Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+
+    formatter.format_fields(writer, vs)
+    parsed = JSON.parse(io.to_s)
+    parsed.should be_a(JSON::Any)
+    parsed.as_h.should be_empty
+  end
+
+  it "implements MakeVisitor(Writer) for upstream visitor pattern" do
+    io = IO::Memory.new
+    writer = Tracing::FmtFormat::Writer.new(io)
+    formatter = Tracing::FmtFormat::JsonFields.new
+
+    visitor = formatter.make_visitor(writer)
+    visitor.should be_a(Tracing::Core::Field::Visit)
+
+    visitor = visitor.as(Tracing::Core::Field::Visit)
+    fs = Tracing::Field::FieldSet.of(["msg"], Tracing::Callsite::Identifier.new)
+    vs = Tracing::Field::ValueSet.new(fs)
+    vs.record(Tracing::Field::Field.new("msg"), "hello")
+    vs.visit(visitor)
+  end
+end
+
 # RED tests — FmtContext + DefaultFormatEvent (ported from upstream fmt/fmt_layer.rs)
 describe "FmtFormat FmtContext" do
   it "wraps LayerContext and provides field_format access" do
@@ -2969,6 +3038,61 @@ describe "FmtLayer JSON with_span_list" do
     spans.size.should eq(2)
     spans[0]["name"].should eq("root_span")
     spans[1]["name"].should eq("child_span")
+  end
+end
+
+# RED tests — LogTracerBuilder (ported from upstream tracing-log log_tracer.rs)
+describe "LogTracer builder" do
+  it "creates a builder via LogTracer.builder" do
+    builder = Tracing::LogTracer.builder
+    builder.should be_a(Tracing::LogTracerBuilder)
+  end
+
+  it "finish returns a LogTracer with defaults" do
+    tracer = Tracing::LogTracer.builder.finish
+    tracer.should be_a(Tracing::LogTracer)
+  end
+
+  it "with_max_level sets the max level filter" do
+    builder = Tracing::LogTracer.builder
+    result = builder.with_max_level(Tracing::Level::WARN)
+    result.should be(builder) # returns self for chaining
+  end
+
+  it "ignore_crate adds a crate to ignore" do
+    builder = Tracing::LogTracer.builder
+    result = builder.ignore_crate("some_crate")
+    result.should be(builder)
+  end
+
+  it "ignore_all adds multiple crates" do
+    builder = Tracing::LogTracer.builder
+    result = builder.ignore_all(["foo", "bar"])
+    result.should be(builder)
+  end
+
+  it "supports method chaining" do
+    tracer = Tracing::LogTracer.builder
+      .with_max_level(Tracing::Level::INFO)
+      .ignore_crate("ignore_me")
+      .ignore_crate("and_me")
+      .finish
+    tracer.should be_a(Tracing::LogTracer)
+  end
+
+  it "creates distinct tracers from different builder configs" do
+    t1 = Tracing::LogTracer.builder
+      .with_max_level(Tracing::Level::ERROR)
+      .ignore_crate("crate_a")
+      .finish
+
+    t2 = Tracing::LogTracer.builder
+      .with_max_level(Tracing::Level::TRACE)
+      .ignore_crate("crate_b")
+      .finish
+
+    t1.should be_a(Tracing::LogTracer)
+    t2.should be_a(Tracing::LogTracer)
   end
 end
 
