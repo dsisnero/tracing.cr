@@ -228,26 +228,38 @@ module Tracing
       span = OpenTelemetry::Span.new(meta.name)
       span.context = build_span_context(trace, parent_span)
       span.parent = parent_span
-      trace.span_context = span.context.as(OpenTelemetry::SpanContext) if trace_owner
+      if trace_owner
+        api_ctx = span.context
+        trace.span_context = OpenTelemetry::SpanContext.new(
+          api_ctx.trace_id, api_ctx.span_id, api_ctx.parent_id,
+          api_ctx.trace_flags, api_ctx.trace_state, api_ctx.remote)
+      end
 
       add_metadata_attributes(span.attributes, meta)
 
       OtelSpanData.new(trace: trace, span: span, parent_span: parent_span, trace_owner: trace_owner)
     end
 
-    private def build_span_context(trace : OpenTelemetry::Trace, parent_span : OpenTelemetry::Span?) : OpenTelemetry::SpanContext
-      if parent_span
-        OpenTelemetry::SpanContext.build(parent_span.context) do |config|
-          config.span_id = trace.provider.id_generator.span_id
-        end
-      else
-        OpenTelemetry::SpanContext.build do |config|
-          config.trace_id = trace.trace_id
-          config.span_id = trace.provider.id_generator.span_id
-          config.trace_flags = OpenTelemetry::TraceFlags::Sampled
-          config.trace_state = trace.span_context.trace_state
-        end
-      end
+    private def build_span_context(trace : OpenTelemetry::Trace, parent_span : OpenTelemetry::Span?) : OpenTelemetry::API::SpanContext
+      sdk_ctx = if parent_span
+                  api_ctx = parent_span.context
+                  sdk_parent = OpenTelemetry::SpanContext.new(
+                    api_ctx.trace_id, api_ctx.span_id, api_ctx.parent_id,
+                    api_ctx.trace_flags, api_ctx.trace_state, api_ctx.remote)
+                  OpenTelemetry::SpanContext.build(sdk_parent) do |config|
+                    config.span_id = trace.provider.id_generator.span_id
+                  end
+                else
+                  OpenTelemetry::SpanContext.build do |config|
+                    config.trace_id = trace.trace_id
+                    config.span_id = trace.provider.id_generator.span_id
+                    config.trace_flags = OpenTelemetry::TraceFlags::Sampled
+                    config.trace_state = trace.span_context.trace_state
+                  end
+                end
+      OpenTelemetry::API::SpanContext.new(
+        sdk_ctx.trace_id, sdk_ctx.span_id, sdk_ctx.parent_id,
+        sdk_ctx.trace_flags, sdk_ctx.trace_state, sdk_ctx.remote)
     end
 
     private def span_data(ctx : LayerContext, id : Core::Span::Id) : OtelSpanData?
