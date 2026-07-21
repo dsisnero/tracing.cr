@@ -1,0 +1,17 @@
+# source_api_id	status	crystal_refs	notes
+src/lib.rs::enum::EventOrSpan	missing	-	baseline
+src/lib.rs::enum::TraceStyle	missing	-	baseline
+src/lib.rs::func::build	missing	-	baseline
+src/lib.rs::func::category_fn	missing	-	baseline
+src/lib.rs::func::flush	missing	-	baseline
+src/lib.rs::func::include_args	missing	-	baseline
+src/lib.rs::func::include_locations	missing	-	baseline
+src/lib.rs::func::name_fn	missing	-	baseline
+src/lib.rs::func::new	missing	-	baseline
+src/lib.rs::func::start_new	missing	-	baseline
+src/lib.rs::func::trace_style	missing	-	baseline
+src/lib.rs::method::ChromeLayerBuilder.new	missing	-	baseline
+src/lib.rs::method::FlushGuard.flush	missing	-	baseline
+src/lib.rs::struct::ChromeLayer	missing	-	baseline
+src/lib.rs::struct::ChromeLayerBuilder	missing	-	baseline
+src/lib.rs::struct::FlushGuard	missing	-	baseline

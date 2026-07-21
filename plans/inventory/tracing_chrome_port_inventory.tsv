@@ -1,0 +1,17 @@
+# source_id	kind	status	crystal_refs	notes
+src/lib.rs::enum::EventOrSpan	enum	ported	src/tracing/chrome.cr	Class wrapping Event|SpanRef
+src/lib.rs::enum::TraceStyle	enum	ported	src/tracing/chrome.cr	Crystal enum (Threaded, Async)
+src/lib.rs::func::build	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#build
+src/lib.rs::func::category_fn	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#category_fn
+src/lib.rs::func::flush	func	ported	src/tracing/chrome.cr	FlushGuard#flush
+src/lib.rs::func::include_args	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#include_args
+src/lib.rs::func::include_locations	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#include_locations
+src/lib.rs::func::name_fn	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#name_fn
+src/lib.rs::func::new	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#initialize
+src/lib.rs::func::start_new	func	ported	src/tracing/chrome.cr	FlushGuard#start_new
+src/lib.rs::func::trace_style	func	ported	src/tracing/chrome.cr	ChromeLayerBuilder#trace_style
+src/lib.rs::method::ChromeLayerBuilder.new	method	ported	src/tracing/chrome.cr	Crystal matching upstream
+src/lib.rs::method::FlushGuard.flush	method	ported	src/tracing/chrome.cr	Crystal matching upstream
+src/lib.rs::struct::ChromeLayer	struct	ported	src/tracing/chrome.cr	Extends Tracing::Layer
+src/lib.rs::struct::ChromeLayerBuilder	struct	ported	src/tracing/chrome.cr	Builder pattern
+src/lib.rs::struct::FlushGuard	struct	ported	src/tracing/chrome.cr	Channel-based lifecycle

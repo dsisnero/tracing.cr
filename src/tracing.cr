@@ -29,6 +29,7 @@ require "./tracing/subscriber/span_trace"
 require "./tracing/subscriber/flame"
 require "./tracing/opentelemetry/layer"
 require "./tracing/subscriber/fmt_builder"
+require "./tracing/chrome"
 require "./tracing/subscriber_conv"
 
 module Tracing
