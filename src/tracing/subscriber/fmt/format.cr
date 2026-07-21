@@ -1,3 +1,5 @@
+require "./format/field"
+
 module Tracing
   module FmtFormat
     # A writer to which formatted representations of spans and events are written.
@@ -181,18 +183,18 @@ module Tracing
       end
     end
 
-    #
-    # Ported from upstream `tracing_subscriber::fmt::format::DefaultFields`.
-    class DefaultFields < FormatFields
+    # Ported from upstream `tracing_subscriber::fmt::format::DefaultVisitor`.
+    class DefaultVisitor
       include Core::Field::Visit
+      include FmtField::VisitFmt
 
-      @writer : IO?
+      getter writer : IO
       @first : Bool = true
 
-      def format_fields(writer : Writer, values : Field::ValueSet) : Nil
-        @writer = writer.io
-        @first = true
-        values.visit(self)
+      def initialize(@writer : IO)
+      end
+
+      def finish : Nil
       end
 
       def record_debug(field : Field::Field, value) : Nil
@@ -224,11 +226,27 @@ module Tracing
       end
 
       private def write_field(key : String, val : String) : Nil
-        w = @writer.not_nil!
-        w << " " unless @first
-        w << key << "=" << val
+        @writer << " " unless @first
+        @writer << key << "=" << val
         @first = false
+      end
+    end
+
+    #
+    # Ported from upstream `tracing_subscriber::fmt::format::DefaultFields`.
+    class DefaultFields < FormatFields
+      include FmtField::MakeVisitor(Writer)
+
+      def make_visitor(target : Writer) : Core::Field::Visit
+        DefaultVisitor.new(target.io)
+      end
+
+      def format_fields(writer : Writer, values : Field::ValueSet) : Nil
+        visitor = make_visitor(writer)
+        values.visit(visitor)
       end
     end
   end
 end
+
+require "./format/json"
