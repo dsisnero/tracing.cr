@@ -40,7 +40,7 @@ Optional OpenTelemetry support is provided by the sibling shard:
 dependencies:
   tracing:
     github: dsisnero/tracing.cr
-    branch: codex/tracing-opentelemetry-split
+    branch: codex-tracing-opentelemetry-split
   tracing-opentelemetry:
     github: dsisnero/tracing-opentelemetry
 ```
