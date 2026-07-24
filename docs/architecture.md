@@ -6,7 +6,8 @@ same high-level split:
 - core tracing data structures and dispatch
 - user-facing facade and macros
 - subscriber/layer/filter/formatting stack
-- adjunct sub-crates such as flame, appender, log bridge, attributes, and OpenTelemetry
+- adjunct sub-crates such as flame, appender, log bridge, and attributes
+- optional companion shards such as `tracing-opentelemetry`
 
 ## Current Source Layout
 
@@ -16,8 +17,8 @@ same high-level split:
 | Core | `src/tracing/core/` | Levels, metadata, fields, callsites, spans, events, subscriber trait, dispatch |
 | Facade | `src/tracing/` | `Tracing.span`, `Tracing.event`, `Tracing::Span`, macros, subscriber convenience |
 | Subscriber stack | `src/tracing/subscriber/` | Registry, layers, filters, formatting, reload, appenders, flame, log bridge, mock, span trace |
-| OpenTelemetry | `src/tracing/opentelemetry/` | `Tracing::OpenTelemetryLayer` |
 | Concurrency | `src/tracing/concurrency*` | Fiber propagation and traced channels |
+| Optional companion shards | external | Integrations such as `tracing-opentelemetry` |
 
 ## Entry Point
 
@@ -27,7 +28,6 @@ It currently:
 
 - requires all core and facade files
 - requires the subscriber stack
-- requires `src/tracing/opentelemetry/layer.cr`
 - exposes `Tracing.fmt` and `Tracing.fmt_layer`
 - aliases the core public types (`Level`, `LevelFilter`, `Metadata`, `Dispatch`, and nested field/callsite/span aliases)
 
@@ -136,9 +136,11 @@ These are implemented directly under `src/tracing/subscriber/`.
 `FlameLayer` writes inferno-compatible folded stack output. It does not render
 SVG itself; downstream tools such as `inferno-flamegraph` consume the output.
 
-## OpenTelemetry Bridge
+## Optional Integrations
 
-`src/tracing/opentelemetry/layer.cr` contains the OTel bridge.
+OpenTelemetry no longer ships from `src/tracing.cr`. The OTel bridge lives in
+the companion shard `tracing-opentelemetry`, which depends on `tracing` and the
+upstream OTel Crystal shards.
 
 Current responsibilities:
 

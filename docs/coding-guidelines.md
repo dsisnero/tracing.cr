@@ -57,7 +57,7 @@ on them indirectly.
 ## Testing Expectations
 
 - The main suite lives in `spec/tracing_spec.cr`.
-- The current suite contains `332` examples.
+- The current suite contains `314` examples.
 - New behavior should come with a focused spec whenever practical.
 - For parity work, port the behavior of the upstream test rather than copying Rust structure literally.
 
@@ -72,7 +72,7 @@ on them indirectly.
 ## Public API Changes
 
 If you change exported behavior under `src/tracing.cr` or add/remove methods
-from `Tracing.fmt`, `FmtLayer`, `Registry`, `Layer`, `OpenTelemetryLayer`,
+from `Tracing.fmt`, `FmtLayer`, `Registry`, `Layer`,
 `NonBlocking`, or `FlameLayer`, update:
 
 - `README.md`

@@ -25,8 +25,6 @@ src/
 │   ├── facade_macros.cr
 │   ├── facade_span.cr
 │   ├── instrument_annotation.cr
-│   ├── opentelemetry/
-│   │   └── layer.cr
 │   └── subscriber/
 │       ├── appender.cr
 │       ├── env_filter.cr
@@ -61,7 +59,6 @@ src/
 - `src/tracing/subscriber/fmt.cr`: `FmtLayer`
 - `src/tracing/subscriber/registry.cr`: `Registry`
 - `src/tracing/subscriber/layer.cr`: `Layer`, `Layered(S)`, `Filtered`
-- `src/tracing/opentelemetry/layer.cr`: `OpenTelemetryLayer`
 - `src/tracing/subscriber/appender.cr`: `NonBlocking`, `RollingFileAppender`
 - `src/tracing/subscriber/flame.cr`: `FlameLayer`
 
@@ -75,7 +72,7 @@ ameba src spec
 crystal spec
 ```
 
-Current suite size: `332` examples.
+Current suite size: `314` examples.
 
 ## Typical Workflow
 
@@ -108,3 +105,6 @@ Useful scripts already in the repo:
 
 Use these for drift checks. The TSV inventory files are still curated ledgers,
 not generated source of truth.
+
+The optional OpenTelemetry bridge now lives in the sibling shard
+`../tracing-opentelemetry`.

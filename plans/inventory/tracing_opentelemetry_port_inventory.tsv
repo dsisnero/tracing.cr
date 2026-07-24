@@ -1,27 +1,5 @@
 # source_id	kind	status	crystal_refs	notes
-layer.rs::func::new	func	ported	src/tracing/opentelemetry/layer.cr	accepts TraceProvider or Trace; uses provider config for new root traces
-layer.rs::func::with_context_activation	func	ported	src/tracing/opentelemetry/layer.cr	activates current fiber trace/span on enter/exit
-layer.rs::func::with_error_events_to_exceptions	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_error_events_to_status	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_error_fields_to_exceptions	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_error_records_to_exceptions	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_level	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_location	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_target	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_threads	func	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::func::with_tracked_inactivity	func	ported	src/tracing/opentelemetry/layer.cr	flag kept for API parity; timings are exported on close
-layer.rs::method::OpenTelemetryLayer.new	method	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::struct::OpenTelemetryLayer	struct	ported	src/tracing/opentelemetry/layer.cr	-
-layer.rs::test::context_activation_disabled	test	missing	-	auto-generated
-layer.rs::test::dynamic_span_names	test	ported	spec/tracing_spec.cr	OpenTelemetry dynamic span name + export integration coverage
-layer.rs::test::event_filter_count	test	missing	-	auto-generated
-layer.rs::test::excludes_level_no_context_activation	test	missing	-	auto-generated
-layer.rs::test::excludes_level_with_context_activation	test	missing	-	auto-generated
-layer.rs::test::excludes_span_location_no_context_activation	test	missing	-	auto-generated
-layer.rs::test::excludes_span_location_with_context_activation	test	missing	-	auto-generated
-layer.rs::test::excludes_target	test	missing	-	auto-generated
-layer.rs::test::excludes_thread_no_context_activation	test	missing	-	auto-generated
-layer.rs::test::excludes_thread_with_context_activation	test	missing	-	auto-generated
+layer.rs::migration	note	moved	tracing-opentelemetry	The OpenTelemetry bridge moved into the sibling tracing-opentelemetry shard on 2026-07-24.
 layer.rs::test::follows_from_adds_link_no_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from
 layer.rs::test::follows_from_adds_link_with_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from
 layer.rs::test::follows_from_multiple_links_no_context_activation	test	skipped	-	current SDK does not expose native span links; bridge stores span ids in tracing.follows_from

@@ -18,7 +18,3 @@ development_dependencies:
 dependencies:
   lipgloss:
     github: dsisnero/lipgloss
-  opentelemetry-api:
-    github: wyhaines/opentelemetry-api.cr
-  opentelemetry-sdk:
-    github: wyhaines/opentelemetry-sdk.cr

@@ -6,8 +6,9 @@ structured, event-based diagnostics for Crystal programs.
 - Current version: `0.5.1`
 - Upstream pin: `tracing-0.1.44` (`2d55f6f`)
 - Current status: core facade, subscriber stack, appender, flame, log bridge,
-  mock, error/span trace, attributes, concurrency helpers, and OpenTelemetry
-  bridge are all shipped in `src/`
+  mock, error/span trace, attributes, and concurrency helpers are shipped in
+  `src/`. The OpenTelemetry bridge now lives in the optional companion shard
+  `tracing-opentelemetry`.
 
 ## Documentation
 
@@ -31,6 +32,17 @@ dependencies:
 
 ```bash
 shards install
+```
+
+Optional OpenTelemetry support is provided by the sibling shard:
+
+```yaml
+dependencies:
+  tracing:
+    github: dsisnero/tracing.cr
+    branch: codex/tracing-opentelemetry-split
+  tracing-opentelemetry:
+    github: dsisnero/tracing-opentelemetry
 ```
 
 ## Quick Start
@@ -57,7 +69,6 @@ It requires and re-exports:
 - `src/tracing/core/` for metadata, fields, spans, events, subscribers, and dispatch
 - `src/tracing/` facade files for `Tracing.span`, `Tracing.event`, `span!`, `info!`, and `Tracing::Span`
 - `src/tracing/subscriber/` for registry, layers, filters, formatting, reload, appenders, flame, log bridge, mock subscriber, and `SpanTrace`
-- `src/tracing/opentelemetry/layer.cr` for `Tracing::OpenTelemetryLayer`
 - `src/tracing/concurrency*` for fiber and channel helpers
 
 ## Core Concepts
@@ -251,12 +262,13 @@ Keep `guard` alive until shutdown so remaining span samples are flushed.
 
 ## OpenTelemetry
 
-The OpenTelemetry bridge is implemented in
-[src/tracing/opentelemetry/layer.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/opentelemetry/layer.cr:1).
+The OpenTelemetry bridge moved into the optional companion shard
+`tracing-opentelemetry`. Install it alongside `tracing`, then require it
+explicitly:
 
 ```crystal
-require "opentelemetry-api"
-require "opentelemetry-sdk"
+require "tracing"
+require "tracing-opentelemetry"
 
 exporter = OpenTelemetry::Exporter.new(:io, io: STDOUT)
 provider = OpenTelemetry::TraceProvider.new(
@@ -339,7 +351,7 @@ ameba src spec
 crystal spec
 ```
 
-The current suite contains `332` examples in `spec/tracing_spec.cr`.
+The current suite contains `314` examples in `spec/tracing_spec.cr`.
 
 ## License
 

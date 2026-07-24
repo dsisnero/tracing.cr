@@ -21,14 +21,15 @@ See also:
 | tracing-flame | 0.1.0 | ✓ | FlameLayer |
 | tracing-attributes | 0.1.0 | ✓ | @[Instrument] |
 | tracing-serde | 0.1.0 | ✓ | JSON mode |
-| tracing-opentelemetry | 0.33.0 | ✓ | 11 features |
+| tracing-opentelemetry | 0.33.0 | moved | companion shard |
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 | tracing-chrome | 0.7.2 | ✓ | ChromeLayer + FlushGuard |
 
-**Total: 332 specs across 14 sub-crates.**
+**Total: base shard specs + optional companion shard specs.**
 
-> `✓` marks feature-level parity for the shipped surface. Outstanding work is
-> tracked in [Remaining for Parity](#remaining-for-parity).
+> `✓` marks feature-level parity for the shipped surface. `moved` marks
+> integrations that now live in a companion shard. Outstanding work is tracked
+> in [Remaining for Parity](#remaining-for-parity).
 
 ## Done (core)
 
@@ -181,20 +182,11 @@ See also:
 - [x] Thread id assignment (fiber → TID mapping)
 - [x] Custom name_fn / category_fn callbacks
 
-### tracing-opentelemetry ✓
+### tracing-opentelemetry moved
 
-- [x] OpenTelemetryLayer
-- [x] Tracer/provider integration + export on span close
-- [x] Context activation via current fiber trace/span
-- [x] Span kind mapping (otel.kind → SpanKind)
-- [x] Span status mapping (otel.status_code → StatusCode)
-- [x] Dynamic span name (otel.name)
-- [x] Error event → status + exception mapping
-- [x] with_level, with_target, with_location, with_threads, with_context_activation
-- [x] Root/child span export + contextual event routing
-
-(Remaining OTel items — metrics and native span-link export — are tracked under
-[Remaining for Parity](#remaining-for-parity).)
+The OpenTelemetry bridge was extracted into the sibling `tracing-opentelemetry`
+shard on July 24, 2026. Its feature parity and remaining work now live with
+that companion shard rather than the base `tracing.cr` surface.
 
 ## Remaining for Parity
 
@@ -325,5 +317,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 332 examples
+crystal spec
 ```

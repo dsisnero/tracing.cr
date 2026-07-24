@@ -6,7 +6,7 @@
 crystal spec
 ```
 
-The current suite contains `332` examples in `spec/tracing_spec.cr`.
+The current suite contains `314` examples in `spec/tracing_spec.cr`.
 
 ## Quality Gates
 
@@ -32,7 +32,7 @@ shipped surface across these areas:
 - appender support (`NonBlocking`, rolling files)
 - log bridge, mock subscriber, and `SpanTrace`
 - flame output
-- OpenTelemetry bridge
+- optional OpenTelemetry split documentation
 - concurrency helpers
 
 ## Focused Test Runs

@@ -15,19 +15,20 @@ All notable changes to this project are documented in this file.
 
 - `EnvFilter` field tracking in `Registry`: `@span_fields` populated on span creation and record, cleaned up on `on_close`
 - `Directive.parse` accepts optional `{field=val,...}` brace syntax after span name
+- Moved `Tracing::OpenTelemetryLayer` into the optional sibling shard `tracing-opentelemetry`; the base `tracing` shard no longer depends on `opentelemetry-api` or `opentelemetry-sdk`
 
 ### Verification
 
 - `crystal tool format --check src spec`
 - `ameba src spec`
-- `crystal spec` (`332` examples)
+- `crystal spec` (`314` examples)
 
 ### Documentation
 
 - Updated `README.md` with EnvFilter field-value example and AsLog/AsTrace usage
 - Updated `docs/architecture.md` — expanded `env_filter.cr` description, added `log.cr` row
 - Updated `docs/development.md` — added `log.cr` to source tree
-- Updated spec counts to `332` in `README.md`, `docs/coding-guidelines.md`, `docs/development.md`, `docs/testing.md`
+- Updated docs for the `tracing-opentelemetry` companion shard split
 
 ## [0.5.1] — 2026-07-20
 
