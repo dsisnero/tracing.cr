@@ -4,6 +4,8 @@ module Tracing
     @inner : Inner?
     @meta : Metadata?
 
+    @@disabled = new(nil, nil)
+
     record Inner, id : Core::Span::Id, subscriber : Dispatch
 
     protected def initialize(@inner : Inner?, @meta : Metadata?)
@@ -60,7 +62,7 @@ module Tracing
     end
 
     def self.none : Span
-      new(nil, Metadata.new("", "", Level::INFO, kind: Kind::SPAN))
+      @@disabled
     end
 
     def disabled? : Bool

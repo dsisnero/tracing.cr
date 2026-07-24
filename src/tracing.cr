@@ -28,7 +28,9 @@ require "./tracing/subscriber/appender"
 require "./tracing/subscriber/mock"
 require "./tracing/subscriber/span_trace"
 require "./tracing/subscriber/flame"
-require "./tracing/opentelemetry/layer"
+{% if flag?(:tracing_opentelemetry) %}
+  require "./tracing/opentelemetry/layer"
+{% end %}
 require "./tracing/subscriber/fmt_builder"
 require "./tracing/chrome"
 require "./tracing/subscriber_conv"

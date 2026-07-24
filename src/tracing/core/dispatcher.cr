@@ -183,16 +183,21 @@ module Tracing
       @@global_init : Atomic(UInt8) = Atomic(UInt8).new(UNINITIALIZED)
       @@global_dispatch : Dispatch?
       @@fiber_locals = {} of Fiber => Dispatch
+      @@fiber_locals_mutex = Mutex.new
 
       private def self.fiber_local : Dispatch?
-        @@fiber_locals[Fiber.current]?
+        @@fiber_locals_mutex.synchronize do
+          @@fiber_locals[Fiber.current]?
+        end
       end
 
       private def self.store_fiber_local(dispatch : Dispatch?) : Nil
-        if dispatch
-          @@fiber_locals[Fiber.current] = dispatch
-        else
-          @@fiber_locals.delete(Fiber.current)
+        @@fiber_locals_mutex.synchronize do
+          if dispatch
+            @@fiber_locals[Fiber.current] = dispatch
+          else
+            @@fiber_locals.delete(Fiber.current)
+          end
         end
       end
     end

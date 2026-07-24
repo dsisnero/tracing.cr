@@ -36,7 +36,9 @@ module Tracing
 
     # Get the current span ID for the current fiber.
     def current_span_id : Core::Span::Id?
-      @current_span_ids[Fiber.current.object_id]?.try(&.last?)
+      @mutex.synchronize do
+        @current_span_ids[Fiber.current.object_id]?.try(&.last?)
+      end
     end
 
     def current_span : Core::Span::Current
