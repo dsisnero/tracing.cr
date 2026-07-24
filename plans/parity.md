@@ -25,7 +25,7 @@ See also:
 | tracing/concurrency | 0.2.5 | ✓ | Fiber + Channel |
 | tracing-chrome | 0.7.2 | ✓ | ChromeLayer + FlushGuard |
 
-**Total: 281 specs across 14 sub-crates.**
+**Total: 332 specs across 14 sub-crates.**
 
 > `✓` marks feature-level parity for the shipped surface. Outstanding work is
 > tracked in [Remaining for Parity](#remaining-for-parity).
@@ -224,7 +224,7 @@ so **verify each against `src/` before starting**.
 
 - [x] `SpanRef#scope` / `#from_root` / `#parent` (`Scope` ancestor iteration; registry resolves contextual parents at `new_span`)
 - [x] `SubscriberInitExt#try_init`
-- [ ] `EnvFilter` field-value directives `target[span{field=val}]=level` (verify; basic level/target/span-name done)
+- [x] `EnvFilter` field-value directives — `Directive.parse` handles `{field=val,...}` syntax with `FieldMatch`; runtime matching checks span field values at `enabled?` via `on_new_span`/`on_record` field tracking
 - [x] `FilterExt` combinators `Layer#and` / `#or` / `#not` (`.boxed` is N/A — Crystal uses runtime polymorphism)
 
 ### tracing-appender
@@ -240,7 +240,8 @@ so **verify each against `src/` before starting**.
 
 - [ ] tracing-error: backtrace formatting + `ExtractSpanTrace` / `InstrumentError` / `InstrumentResult`
 - [x] tracing-log: `LogTracerBuilder` — builder API (`with_max_level`, `ignore_crate`, `ignore_all`, `finish`); class-level `LogTracer.builder`
-- [ ] tracing-log: `AsLog` / `AsTrace` / `NormalizeEvent` / `interest_cache` (deferred)
+- [x] tracing-log: `Tracing::Log.level_as_log` / `level_filter_as_log` / `severity_as_trace` (AsLog/AsTrace conversion utility module; `NormalizeEvent` deferred)
+- [ ] tracing-log: `NormalizeEvent` / `interest_cache` (deferred)
 - [ ] tracing-futures: `Instrument` / `WithSubscriber` traits
 - [ ] tracing-serde: standalone `AsSerde` / `AsMap` traits (likely **N/A** — Crystal uses `JSON.build`)
 - [ ] tracing-journald: systemd journal sink (Linux-only — decide **skip**)
@@ -324,5 +325,5 @@ the relevant source files; omitted symbols are marked `skipped` in
 ```bash
 crystal tool format --check src spec
 ameba src spec
-crystal spec   # 281 examples
+crystal spec   # 332 examples
 ```

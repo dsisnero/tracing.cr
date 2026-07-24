@@ -38,6 +38,7 @@ src/
 │       ├── fmt.cr
 │       ├── fmt_builder.cr
 │       ├── layer.cr
+│       ├── log.cr
 │       ├── log_tracer.cr
 │       ├── lookup_span.cr
 │       ├── mock.cr
@@ -74,7 +75,7 @@ ameba src spec
 crystal spec
 ```
 
-Current suite size: `283` examples.
+Current suite size: `332` examples.
 
 ## Typical Workflow
 

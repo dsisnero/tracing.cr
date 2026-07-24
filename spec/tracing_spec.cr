@@ -796,6 +796,56 @@ describe "EnvFilter Directive parsing (ported from upstream filter/env/directive
     d.target.should eq("my_crate")
     d.level.into_level.should eq(Level::DEBUG)
   end
+
+  it "rejects unclosed bracket" do
+    expect_raises(ArgumentError) { Tracing::Directive.parse("my_crate[my_span") }
+  end
+
+  # RED — field-value directives (ported from upstream filter/env/directive.rs)
+  it "parses target[span{field}]=level (field presence)" do
+    d = Tracing::Directive.parse("my_crate[my_span{user_id}]=info")
+    d.level.into_level.should eq(Level::INFO)
+    d.target.should eq("my_crate")
+    d.in_span.should eq("my_span")
+    d.fields.size.should eq(1)
+    d.fields[0].name.should eq("user_id")
+    d.fields[0].value.should be_nil
+  end
+
+  it "parses target[span{field=val}]=level (field value)" do
+    d = Tracing::Directive.parse("my_crate[my_span{user_id=123}]=debug")
+    d.level.into_level.should eq(Level::DEBUG)
+    d.target.should eq("my_crate")
+    d.in_span.should eq("my_span")
+    d.fields.size.should eq(1)
+    d.fields[0].name.should eq("user_id")
+    d.fields[0].value.should eq("123")
+  end
+
+  it "parses target[{field=val}]=level (no span name, just field)" do
+    d = Tracing::Directive.parse("my_crate[{user_id=123}]=warn")
+    d.level.into_level.should eq(Level::WARN)
+    d.target.should eq("my_crate")
+    d.in_span.should be_nil
+    d.fields.size.should eq(1)
+    d.fields[0].name.should eq("user_id")
+  end
+
+  it "parses multiple fields in a directive" do
+    d = Tracing::Directive.parse("my_crate[span_name{field1=a,field2=b}]=error")
+    d.fields.size.should eq(2)
+    d.fields[0].name.should eq("field1")
+    d.fields[0].value.should eq("a")
+    d.fields[1].name.should eq("field2")
+    d.fields[1].value.should eq("b")
+  end
+
+  it "parses field with string value containing special chars" do
+    d = Tracing::Directive.parse("my_target[my_span{name=hello_world}]=trace")
+    d.fields.size.should eq(1)
+    d.fields[0].name.should eq("name")
+    d.fields[0].value.should eq("hello_world")
+  end
 end
 
 # RED tests — EnvFilter layer
@@ -2086,6 +2136,46 @@ describe "EnvFilter span-name matching" do
   end
 end
 
+describe "EnvFilter field-value matching" do
+  it "filters events by field value on active span" do
+    filter = Tracing::EnvFilter.new("my_target[{user_id=123}]=info")
+    counting = EventCollector.new
+    subscriber = Tracing::Registry.new.with(counting).with(filter)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s1 = Tracing.span(Level::INFO, "span_a", target: "my_target", user_id: "123")
+      s1.in_scope do
+        Tracing.event(Level::INFO, "match_event", target: "my_target")
+      end
+
+      s2 = Tracing.span(Level::INFO, "span_b", target: "my_target", user_id: "456")
+      s2.in_scope do
+        Tracing.event(Level::INFO, "mismatch_event", target: "my_target")
+      end
+    end
+
+    counting.names.should contain("match_event")
+    counting.names.should_not contain("mismatch_event")
+  end
+
+  it "allows events when span has matching fields" do
+    filter = Tracing::EnvFilter.new("my_target[{role=admin}]=warn")
+    counting = EventCollector.new
+    subscriber = Tracing::Registry.new.with(counting).with(filter)
+
+    Dispatch.with_default(Dispatch.new(subscriber)) do
+      s = Tracing.span(Level::WARN, "admin_span", target: "my_target", role: "admin")
+      s.in_scope do
+        Tracing.event(Level::WARN, "admin_event", target: "my_target")
+        Tracing.event(Level::INFO, "info_event", target: "my_target")
+      end
+    end
+
+    counting.names.should contain("admin_event")
+    counting.names.should_not contain("info_event")
+  end
+end
+
 # Ported from upstream registry span lifecycle
 describe "Registry span lifecycle" do
   it "clones and closes spans with ref counting" do
@@ -3108,5 +3198,36 @@ describe "Subscriber.try_init" do
   it "can be called and returns a Bool" do
     result = Tracing::Subscriber.try_init(Tracing::Registry.new)
     result.should be_a(Bool)
+  end
+end
+
+# RED tests — AsLog/AsTrace (ported from tracing-log/src/lib.rs)
+describe "Log conversion (tracing-log port)" do
+  it "level_as_log maps Level to ::Log::Severity" do
+    Tracing::Log.level_as_log(Tracing::Level::TRACE).should eq(::Log::Severity::Trace)
+    Tracing::Log.level_as_log(Tracing::Level::DEBUG).should eq(::Log::Severity::Debug)
+    Tracing::Log.level_as_log(Tracing::Level::INFO).should eq(::Log::Severity::Info)
+    Tracing::Log.level_as_log(Tracing::Level::WARN).should eq(::Log::Severity::Warn)
+    Tracing::Log.level_as_log(Tracing::Level::ERROR).should eq(::Log::Severity::Error)
+  end
+
+  it "level_filter_as_log maps LevelFilter to ::Log::Severity" do
+    Tracing::Log.level_filter_as_log(Tracing::LevelFilter.trace).should eq(::Log::Severity::Trace)
+    Tracing::Log.level_filter_as_log(Tracing::LevelFilter.debug).should eq(::Log::Severity::Debug)
+    Tracing::Log.level_filter_as_log(Tracing::LevelFilter.info).should eq(::Log::Severity::Info)
+    Tracing::Log.level_filter_as_log(Tracing::LevelFilter.warn).should eq(::Log::Severity::Warn)
+    Tracing::Log.level_filter_as_log(Tracing::LevelFilter.error).should eq(::Log::Severity::Error)
+    Tracing::Log.level_filter_as_log(Tracing::LevelFilter.off).should eq(::Log::Severity::None)
+  end
+
+  it "severity_as_trace maps ::Log::Severity to Level" do
+    Tracing::Log.severity_as_trace(::Log::Severity::Trace).should eq(Tracing::Level::TRACE)
+    Tracing::Log.severity_as_trace(::Log::Severity::Debug).should eq(Tracing::Level::DEBUG)
+    Tracing::Log.severity_as_trace(::Log::Severity::Info).should eq(Tracing::Level::INFO)
+    Tracing::Log.severity_as_trace(::Log::Severity::Notice).should eq(Tracing::Level::INFO)
+    Tracing::Log.severity_as_trace(::Log::Severity::Warn).should eq(Tracing::Level::WARN)
+    Tracing::Log.severity_as_trace(::Log::Severity::Error).should eq(Tracing::Level::ERROR)
+    Tracing::Log.severity_as_trace(::Log::Severity::Fatal).should eq(Tracing::Level::ERROR)
+    Tracing::Log.severity_as_trace(::Log::Severity::None).should eq(Tracing::Level::ERROR)
   end
 end

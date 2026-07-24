@@ -75,6 +75,7 @@ module Tracing
   module LookupSpan
     abstract def span_data(id : Core::Span::Id) : Registry::SpanData?
     abstract def span(id : Core::Span::Id) : SpanRef?
+    abstract def current_span_id : Core::Span::Id?
   end
 
   # Looks up span data stored in a Registry.
@@ -98,6 +99,10 @@ module Tracing
 
     def span(id : Core::Span::Id) : SpanRef?
       @inner.as?(LookupSpan).try(&.span(id))
+    end
+
+    def current_span_id : Core::Span::Id?
+      @inner.as?(LookupSpan).try(&.current_span_id)
     end
   end
 

@@ -6,7 +6,7 @@
 crystal spec
 ```
 
-The current suite contains `283` examples in `spec/tracing_spec.cr`.
+The current suite contains `332` examples in `spec/tracing_spec.cr`.
 
 ## Quality Gates
 

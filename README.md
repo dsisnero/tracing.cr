@@ -147,6 +147,9 @@ fmt = Tracing::FmtLayer.new(STDOUT).with_filter(Tracing::LevelFilter::INFO)
 # Environment grammar
 env = Tracing::EnvFilter.new("info,my_app=debug,my_app[db]=trace")
 
+# Field-value matching (target[span{field=val}]=level)
+field_filter = Tracing::EnvFilter.new("my_app[db{query=auth}]=debug")
+
 # Closure-based
 warn_only = Tracing::FilterFn.new { |meta| meta.level <= Tracing::Level::WARN }
 
@@ -187,6 +190,20 @@ Tracing.fmt.compact.init
 Log.setup(:trace, Tracing::LogTracer.new)
 
 Log.info { "routed to tracing" }
+```
+
+Level conversion between tracing and `::Log` is available in
+[src/tracing/log.cr](/Volumes/extreme_ssd/repos/github.com/dsisnero/tracing.cr/src/tracing/log.cr:1):
+
+```crystal
+# Level → ::Log::Severity
+Tracing::Log.level_as_log(Tracing::Level::WARN)  # => ::Log::Severity::Warn
+
+# LevelFilter → ::Log::Severity
+Tracing::Log.level_filter_as_log(Tracing::LevelFilter.off)  # => ::Log::Severity::None
+
+# ::Log::Severity → Level
+Tracing::Log.severity_as_trace(::Log::Severity::Notice)  # => Tracing::Level::INFO
 ```
 
 ## Non-Blocking Output and Rotation
@@ -322,7 +339,7 @@ ameba src spec
 crystal spec
 ```
 
-The current suite contains `283` examples in `spec/tracing_spec.cr`.
+The current suite contains `332` examples in `spec/tracing_spec.cr`.
 
 ## License
 

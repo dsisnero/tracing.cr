@@ -92,7 +92,7 @@ to emit root-to-leaf span lists.
 |------|---------|
 | `layer.cr` | `Layer`, `LayerContext`, `Layered(S)`, `Filtered`, `NoOpLayer` |
 | `filter.cr` | `LevelFilterLayer` |
-| `env_filter.cr` | directive parser and `EnvFilter` |
+| `env_filter.cr` | `Directive` parser (target, span-name, field-value `{field=val}`), `FieldMatch`, `EnvFilter` layer with runtime field-value matching |
 | `filter_fn.cr` | closure-based metadata filters |
 | `targets.cr` | target-prefix filters |
 | `filter_ext.cr` | `and`, `or`, `not` combinators |
@@ -128,6 +128,7 @@ These are implemented directly under `src/tracing/subscriber/`.
 |------|---------|
 | `appender.cr` | `NonBlocking`, `WorkerGuard`, `RollingFileAppender`, `Rotation` |
 | `flame.cr` | `FlameLayer`, `FlameGuard` |
+| `log.cr` | `Tracing::Log` — level conversions between tracing and `::Log` (`level_as_log`, `level_filter_as_log`, `severity_as_trace`) |
 | `log_tracer.cr` | Crystal `Log` bridge |
 | `mock.cr` | `MockSubscriber` |
 | `span_trace.cr` | `SpanTrace` capture and formatting |

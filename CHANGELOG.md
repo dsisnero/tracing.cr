@@ -2,6 +2,33 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `Tracing::Log` module with level conversion utilities: `level_as_log`, `level_filter_as_log`, `severity_as_trace` (`src/tracing/log.cr`)
+- EnvFilter field-value directive parsing — `{field=val}` syntax in span-scoped directives (e.g., `my_app[db{query=auth}]=debug`)
+- EnvFilter runtime field-value matching via `FieldCollector` visitor — span fields tracked on `on_new_span`/`on_record`, matched against `FieldMatch` in `enabled?` for events
+- `LookupSpan#current_span_id` — abstract method + `Layered` delegation, used by EnvFilter to resolve the active span during field-value checks
+
+### Changed
+
+- `EnvFilter` field tracking in `Registry`: `@span_fields` populated on span creation and record, cleaned up on `on_close`
+- `Directive.parse` accepts optional `{field=val,...}` brace syntax after span name
+
+### Verification
+
+- `crystal tool format --check src spec`
+- `ameba src spec`
+- `crystal spec` (`332` examples)
+
+### Documentation
+
+- Updated `README.md` with EnvFilter field-value example and AsLog/AsTrace usage
+- Updated `docs/architecture.md` — expanded `env_filter.cr` description, added `log.cr` row
+- Updated `docs/development.md` — added `log.cr` to source tree
+- Updated spec counts to `332` in `README.md`, `docs/coding-guidelines.md`, `docs/development.md`, `docs/testing.md`
+
 ## [0.5.1] — 2026-07-20
 
 This release reflects the current `src/` surface and repo layout.

@@ -57,7 +57,7 @@ on them indirectly.
 ## Testing Expectations
 
 - The main suite lives in `spec/tracing_spec.cr`.
-- The current suite contains `283` examples.
+- The current suite contains `332` examples.
 - New behavior should come with a focused spec whenever practical.
 - For parity work, port the behavior of the upstream test rather than copying Rust structure literally.
 
