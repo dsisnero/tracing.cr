@@ -16,12 +16,13 @@ describe Tracing::Core::Dispatch do
     200.times do
       context.spawn do
         20.times do
+          prior = Tracing::Core::Dispatch.current
           dispatch = Tracing::Core::Dispatch.new
           Tracing::Core::Dispatch.with_default(dispatch) do
             Fiber.yield
             Tracing::Core::Dispatch.current.should eq(dispatch)
           end
-          Tracing::Core::Dispatch.current.should be_nil
+          Tracing::Core::Dispatch.current.should eq(prior)
         end
         completed.send(nil)
       end
