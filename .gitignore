@@ -11,6 +11,7 @@
 temp/
 
 # Dependency directories
+/node_modules/
 /lib/*
 !/lib/porting_helpers/
 /bin/
