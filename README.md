@@ -3,7 +3,7 @@
 A Crystal port of [tokio-rs/tracing](https://github.com/tokio-rs/tracing):
 structured, event-based diagnostics for Crystal programs.
 
-- Current version: `0.5.1`
+- Current version: `0.5.2`
 - Upstream pin: `tracing-0.1.44` (`2d55f6f`)
 - Current status: core facade, subscriber stack, appender, flame, log bridge,
   mock, error/span trace, attributes, and concurrency helpers are shipped in
